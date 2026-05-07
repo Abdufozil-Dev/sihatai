@@ -8,3 +8,8 @@ coverage/
 .env*
 !.env.example
 "firebase-blueprint.json" 
+".env" 
+"dist/" 
+"node_modules/" 
+"firebase-blueprint.json" 
+"data/" 
