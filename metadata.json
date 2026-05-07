@@ -1,0 +1,5 @@
+{
+  "name": "Sihat AI - Telegram Health Assistant",
+  "description": "AI-powered health diagnostics, clinic directory, and medical consultation via Telegram Mini App.",
+  "requestFramePermissions": ["geolocation", "microphone"]
+}
