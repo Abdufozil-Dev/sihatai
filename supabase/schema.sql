@@ -55,7 +55,24 @@ create table if not exists public.payment_requests (
   reviewed_at timestamptz
 );
 create index if not exists payment_requests_status_idx on public.payment_requests(status);
-create index if not exists payment_requests_created_at_idx on public.payment_requests(created_at desc);
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null references public.users(id) on delete cascade,
+  title text not null,
+  message text not null,
+  is_read boolean default false,
+  created_at timestamptz default now()
+);
+create index if not exists notifications_user_id_idx on public.notifications(user_id);
+create table if not exists public.medicine_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null references public.users(id) on delete cascade,
+  reminder_id uuid references public.reminders(id) on delete set null,
+  medicine_name text not null,
+  taken_at timestamptz default now()
+);
+create index if not exists medicine_logs_user_id_idx on public.medicine_logs(user_id);
+create index if not exists medicine_logs_taken_at_idx on public.medicine_logs(taken_at desc);
 
 -- Eslatma:
 -- Bu loyiha hozir auth/RLS ishlatmaydi; server service-role key bilan ishlaydi.

@@ -104,18 +104,40 @@ async function startServer() {
 
   botInstance.on('message', async (msg) => {
     if (msg.text?.trim() === '/start') {
-      const fullName = `${msg.from?.first_name || ''} ${msg.from?.last_name || ''}`.trim() || 'Foydalanuvchi';
-      const welcomeMessage = `🩺 *Sihat AI ga xush kelibsiz!*\n\nIsmingizni yozing yoki quyidagi tugmani bosing\n(hozir profilda: ${fullName}).\n\nIsmdan so'ng telefon nomeringizni so'raymiz — shundan keyin ilova ochiladi.`;
-      
-      const keyboard = {
-        inline_keyboard: [
-          [{ text: '✅ Telegramdan ismni olish', callback_data: 'get_name_from_tg' }]
-        ]
-      };
+      const chatId = msg.chat.id;
+      const userId = String(msg.from?.id);
+      const appUrl = process.env.APP_URL || 'https://your-public-url.com';
 
       try {
-        await botInstance!.sendMessage(msg.chat.id, welcomeMessage, { parse_mode: 'Markdown', reply_markup: keyboard });
-      } catch (err) {}
+        const supabase = getSupabaseAdmin();
+        const { data: user, error } = await supabase.from('users').select('*').eq('id', userId).maybeSingle();
+
+        if (user && user.phone) {
+          // Foydalanuvchi allaqachon ro'yxatdan o'tgan
+          const welcomeBackMessage = `👋 *Sihat AI ga qaytganingizdan xursandmiz!*\n\nIlovani ochib sog'lig'ingizni kuzatishda davom eting.`;
+          await botInstance!.sendMessage(chatId, welcomeBackMessage, {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [[{ text: '🩺 Sihat Ai ni ochish', web_app: { url: appUrl } }]]
+            }
+          });
+          return;
+        }
+
+        // Ro'yxatdan o'tmagan bo'lsa, odatdagi jarayon
+        const fullName = `${msg.from?.first_name || ''} ${msg.from?.last_name || ''}`.trim() || 'Foydalanuvchi';
+        const welcomeMessage = `🩺 *Sihat AI ga xush kelibsiz!*\n\nIsmingizni yozing yoki quyidagi tugmani bosing\n(hozir profilda: ${fullName}).\n\nIsmdan so'ng telefon nomeringizni so'raymiz — shundan keyin ilova ochiladi.`;
+        
+        const keyboard = {
+          inline_keyboard: [
+            [{ text: '✅ Telegramdan ismni olish', callback_data: 'get_name_from_tg' }]
+          ]
+        };
+
+        await botInstance!.sendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown', reply_markup: keyboard });
+      } catch (err) {
+        console.error("Start command error:", err);
+      }
     }
   });
 
@@ -187,10 +209,21 @@ async function startServer() {
   app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
   app.post('/api/send-notification', async (req, res) => {
-    const { chatId, message } = req.body;
+    const { chatId, message, title } = req.body;
     if (!chatId || !message || !botInstance) return res.status(400).json({ error: 'Invalid request' });
     try {
-      await botInstance.sendMessage(chatId, message);
+      // 1. Send to Telegram
+      await botInstance.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+      
+      // 2. Save to DB Notifications (for Mini App real-time)
+      const supabase = getSupabaseAdmin();
+      await supabase.from('notifications').insert({
+        user_id: String(chatId),
+        title: title || 'Yangi xabar',
+        message: message.replace(/\*/g, ''), // Remove markdown for in-app
+        is_read: false
+      });
+
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: 'Failed to send' });
@@ -206,6 +239,75 @@ async function startServer() {
       res.status(500).json({ error: e.message });
     }
   });
+
+  // --- Background Reminder Service ---
+  setInterval(async () => {
+    if (!botInstance) return;
+
+    try {
+      // Uzbekistan vaqtini olish (UTC+5)
+      const now = new Date();
+      const uzTime = new Date(now.getTime() + (5 * 60 * 60 * 1000));
+      const currentTime = uzTime.getUTCHours().toString().padStart(2, '0') + ':' + 
+                          uzTime.getUTCMinutes().toString().padStart(2, '0');
+      
+      const daysOfWeek = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
+      const currentDay = daysOfWeek[uzTime.getUTCDay()];
+
+      const supabase = getSupabaseAdmin();
+      // Faol eslatmalarni va aynan shu vaqtdagilarni qidirish
+      const { data: reminders, error } = await supabase
+        .from('reminders')
+        .select('*, users(display_name)')
+        .eq('is_active', true)
+        .eq('time', currentTime);
+
+      if (error) throw error;
+
+      if (reminders && reminders.length > 0) {
+        for (const r of reminders) {
+          // Kunlarni tekshirish (agar kunlar ko'rsatilgan bo'lsa)
+          const reminderDays = Array.isArray(r.days) ? r.days : [];
+          if (reminderDays.length > 0 && !reminderDays.includes(currentDay)) {
+            continue;
+          }
+
+          const userName = r.users?.display_name || 'Foydalanuvchi';
+          
+          // Chiroyli formatdagi xabar (Foydalanuvchi xohlagan formatda)
+           const message = 
+             `🔔 *DIQQAT, DORI ICHISH VAQTI!*\n\n` +
+             `Hurmatli *${userName}*, sog'lig'ingiz uchun dorilaringizni vaqtida ichishni unutmang:\n\n` +
+             `*${r.medicine_name}* ni ichib oling siz uchun bu muhim\n\n` +
+             `✅ Dorini ichgan bo'lsangiz, ilovada belgilab qo'yishingiz mumkin.`;
+
+          const keyboard = {
+             inline_keyboard: [
+               [{ text: '🩺 Ilovani ochish', web_app: { url: process.env.APP_URL || 'https://your-public-url.com' } }]
+             ]
+           };
+ 
+           botInstance.sendMessage(r.user_id, message, { 
+             parse_mode: 'Markdown',
+             reply_markup: keyboard
+           }).catch(err => console.error(`Failed to send reminder to ${r.user_id}:`, err.message));
+
+           // Mini App bildirishnomalar jadvaliga ham saqlash
+           supabase.from('notifications').insert({
+             user_id: r.user_id,
+             title: 'Dori ichish vaqti!',
+             message: `${r.medicine_name} ni ichib oling siz uchun bu muhim`,
+             is_read: false
+           }).then(({ error }) => {
+             if (error) console.error('Failed to save notification to DB:', error.message);
+           });
+         }
+       }
+    } catch (err) {
+      console.error('Reminder service error:', err);
+    }
+  }, 60000); // Har 60 soniyada tekshiradi
+  // -----------------------------------
 
   app.get('/api/users/:id', async (req, res) => {
     try {
@@ -273,6 +375,61 @@ async function startServer() {
       const { error } = await getSupabaseAdmin().from('reminders').delete().eq('id', req.params.id);
       if (error) throw error;
       res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // --- Notifications API ---
+  app.get('/api/notifications', async (req, res) => {
+    try {
+      const userId = String(req.query.userId || '').trim();
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      const { data, error } = await getSupabaseAdmin()
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      res.json(data || []);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.patch('/api/notifications/:id/read', async (req, res) => {
+    try {
+      const { error } = await getSupabaseAdmin()
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', req.params.id);
+      if (error) throw error;
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // --- Medicine Logs API ---
+  app.post('/api/medicine-logs', async (req, res) => {
+    try {
+      const { userId, reminderId, medicineName } = req.body;
+      if (!userId || !medicineName) return res.status(400).json({ error: 'userId and medicineName required' });
+      
+      const { data, error } = await getSupabaseAdmin()
+        .from('medicine_logs')
+        .insert({
+          user_id: userId,
+          reminder_id: reminderId || null,
+          medicine_name: medicineName,
+          taken_at: new Date().toISOString()
+        })
+        .select('*')
+        .maybeSingle();
+
+      if (error) throw error;
+      res.json({ success: true, log: data });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }

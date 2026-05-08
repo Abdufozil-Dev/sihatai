@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+import { notificationService, AppNotification } from '../services/notificationService';
+import { medicineLogService } from '../services/medicineLogService';
 import { 
   Activity, 
   ChevronRight,
@@ -8,7 +10,8 @@ import {
   Bell,
   Sparkles,
   Pill,
-  Search
+  Search,
+  Check
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
@@ -89,29 +92,88 @@ export default function Home() {
     else setGreeting('Xayrli kech');
   }, []);
 
-  const [modalType, setModalType] = useState<'meal' | 'weight' | 'health' | 'notification' | null>(null);
+  const [modalType, setModalType] = useState<'meal' | 'weight' | 'health' | 'notification' | 'notifications_list' | null>(null);
   const [notificationMsg, setNotificationMsg] = useState('');
   const [hasNewNotification, setHasNewNotification] = useState(false);
-  const [currentAnnouncement, setCurrentAnnouncement] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   useEffect(() => {
-    const cached = localStorage.getItem('last_seen_announcement_text');
-    if (cached) setCurrentAnnouncement(cached);
-  }, []);
+    const fetchNotifications = async () => {
+      if (!user?.uid) return;
+      try {
+        const data = await notificationService.getUserNotifications(user.uid);
+        setNotifications(data);
+        setHasNewNotification(data.some(n => !n.isRead));
+      } catch (err) {
+        console.error("Fetch notifications failed:", err);
+      }
+    };
+
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000); // Polling har 30 soniyada
+    
+    // Brauzer bildirshnomasi uchun ruxsat so'rash
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    return () => clearInterval(interval);
+  }, [user?.uid]);
+
+  // Yangi bildirishnoma kelganda brauzer xabarini chiqarish
+  useEffect(() => {
+    const unread = notifications.filter(n => !n.isRead);
+    if (unread.length > 0) {
+      const latest = unread[0];
+      // Faqat agar app fonda bo'lsa yoki ruxsat berilgan bo'lsa
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(latest.title, {
+          body: latest.message,
+          icon: '/metadata.json' // Ikonka yo'qligi sababli metadata'dan foydalanamiz yoki biron rasm
+        });
+      }
+    }
+  }, [notifications]);
 
   const handleBellClick = () => {
     if (tg?.HapticFeedback) {
       tg.HapticFeedback.impactOccurred('medium');
     }
+    setModalType('notifications_list');
+  };
 
-    if (hasNewNotification && currentAnnouncement) {
-      setNotificationMsg(currentAnnouncement);
-      setModalType('notification');
+  const markAsTaken = async (n: AppNotification) => {
+    if (!user?.uid) return;
+    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    
+    try {
+      // Dori nomini xabardan ajratib olishga harakat qilamiz (agar dori eslatmasi bo'lsa)
+      // Bizning xabarimiz: "${r.medicine_name} ni ichib oling siz uchun bu muhim"
+      const medicineName = n.message.split(' ni ichib oling')[0] || 'Dori';
       
-      localStorage.setItem('last_seen_announcement_text', currentAnnouncement);
+      await medicineLogService.logIntake({
+        userId: user.uid,
+        medicineName: medicineName
+      });
+      
+      await notificationService.markAsRead(n.id);
+      setNotifications(prev => prev.map(notif => notif.id === n.id ? { ...notif, isRead: true } : notif));
+      setNotificationMsg(`${medicineName} ichilgani qayd etildi!`);
+      setModalType('notification');
+    } catch (err) {
+      console.error("Mark as taken failed:", err);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    if (!user?.uid) return;
+    try {
+      const unread = notifications.filter(n => !n.isRead);
+      await Promise.all(unread.map(n => notificationService.markAsRead(n.id)));
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setHasNewNotification(false);
-    } else {
-      handleAction("Yangi bildirishnomalar yo'q.");
+    } catch (err) {
+      console.error("Mark as read failed:", err);
     }
   };
 
@@ -272,12 +334,51 @@ export default function Home() {
           modalType === 'meal' ? 'Sog\'lom ovqatlanish rejasi' :
           modalType === 'weight' ? 'Vazn va BMI' :
           modalType === 'health' ? 'Salomatlik' :
+          modalType === 'notifications_list' ? 'Bildirishnomalar' :
           'Bildirishnoma'
         }
         message={
           modalType === 'meal' ? 'Bugun uchun tavsiya etilgan menyu' :
           modalType === 'weight' ? 'Vazningiz va bo\'yingizni kiriting' :
           modalType === 'health' ? 'Qon bosimi va pulsni kiriting' :
+          modalType === 'notifications_list' ? (
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              {notifications.length > 0 ? (
+                notifications.map((n) => (
+                  <div key={n.id} className={cn(
+                    "p-4 rounded-2xl border transition-all",
+                    n.isRead ? "bg-slate-50 border-slate-100" : "bg-blue-50 border-blue-100"
+                  )}>
+                    <div className="flex justify-between items-start mb-1">
+                      <h4 className="font-bold text-slate-900 text-sm">{n.title}</h4>
+                      {!n.isRead && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">{n.message}</p>
+                    <div className="flex justify-between items-center mt-3">
+                      <p className="text-[10px] text-slate-400 font-medium">
+                        {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      {!n.isRead && n.title === 'Dori ichish vaqti!' && (
+                        <button 
+                          onClick={() => markAsTaken(n)}
+                          className="px-3 py-1 bg-blue-600 text-white text-[10px] font-bold rounded-lg shadow-md shadow-blue-100 active:scale-95 transition-all"
+                        >
+                          DORI ICHILDI
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-12 text-center space-y-3">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300">
+                    <Bell size={32} />
+                  </div>
+                  <p className="text-slate-400 text-sm font-medium">Hozircha bildirishnomalar yo'q</p>
+                </div>
+              )}
+            </div>
+          ) :
           notificationMsg
         }
         actions={
@@ -299,6 +400,15 @@ export default function Home() {
               variant: 'primary' 
             },
             { label: 'Bekor qilish', onClick: () => setModalType(null), variant: 'secondary' }
+          ] :
+          modalType === 'notifications_list' ? [
+            { 
+              label: 'Barchasini o\'qish', 
+              onClick: markAllAsRead, 
+              variant: 'primary',
+              disabled: !hasNewNotification 
+            },
+            { label: 'Yopish', onClick: () => setModalType(null), variant: 'secondary' }
           ] :
           modalType === 'notification' ? [
             { label: 'Tushunarli', onClick: () => setModalType(null), variant: 'primary' }
@@ -396,11 +506,11 @@ export default function Home() {
         </div>
         <button 
           onClick={handleBellClick}
-          className="w-14 h-14 bg-white rounded-3xl flex items-center justify-center shadow-sm border border-slate-200 text-slate-400 relative active:scale-90 transition-all"
+          className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all relative"
         >
-          <Bell size={22} strokeWidth={2.2} />
+          <Bell size={24} strokeWidth={2.5} />
           {hasNewNotification && (
-            <span className="absolute top-4 right-4 w-2.5 h-2.5 bg-rose-500 border-2 border-white rounded-full" />
+            <span className="absolute top-4 right-4 w-3 h-3 bg-rose-500 border-2 border-white rounded-full animate-pulse" />
           )}
         </button>
       </div>
@@ -424,30 +534,47 @@ export default function Home() {
         ))}
       </div>
 
-      {/* AI Health Banner */}
+      {/* AI Health Banner - Professionalized */}
       <motion.div 
         whileTap={{ scale: 0.98 }}
         onClick={() => handleNavigate('/consult')}
-        className="bg-blue-600 rounded-[2rem] p-6 text-white shadow-xl shadow-blue-200/40 relative overflow-hidden group cursor-pointer"
+        className="bg-[#0F172A] rounded-[2.5rem] p-8 text-white shadow-2xl shadow-slate-300 relative overflow-hidden group cursor-pointer border border-slate-800"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl" />
-        <div className="relative z-10 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center">
-              <Sparkles className="text-white" size={22} />
+        <div className="absolute top-0 right-0 w-40 h-40 bg-blue-600/20 rounded-full -mr-16 -mt-16 blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-600/10 rounded-full -ml-16 -mb-16 blur-3xl" />
+        
+        <div className="relative z-10 space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 ring-4 ring-white/10">
+                <Sparkles className="text-white" size={28} />
+              </div>
+              <div>
+                <h3 className="text-[24px] font-bold tracking-tight uppercase leading-none">AI EKSPERT</h3>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                  <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-[0.2em]">PROFESSIONAL DIAGNOSTIKA</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h3 className="text-[22px] font-bold tracking-tight uppercase">AI DIAGNOSTIKA</h3>
-              <p className="text-blue-100 text-[10px] font-bold uppercase tracking-widest">Sog'lig'ingizni tekshiring</p>
+            <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-white/30 group-hover:text-white transition-colors">
+              <ChevronRight size={24} />
             </div>
           </div>
-          <p className="text-blue-50 text-[13px] font-medium leading-relaxed opacity-90">
-            Simptomlaringizni yozing va sun'iy intellekt yordamida tezkor tahlil hamda tavsiyalarni oling.
+          
+          <p className="text-slate-300 text-[14px] font-medium leading-relaxed opacity-90">
+            Simptomlaringizni tahlil qiling va yuqori malakali shifokorlar qabuliga onlayn navbat oling.
           </p>
-          <div className="pt-0.5">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-700 rounded-lg text-[9px] font-bold uppercase tracking-wider shadow-lg">
-              Boshlash <ChevronRight size={12} />
-            </span>
+          
+          <div className="pt-2 flex items-center gap-4">
+            <div className="flex -space-x-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-[#0F172A] bg-slate-800 flex items-center justify-center">
+                  <User size={14} className="text-slate-400" />
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">+1200 foydalanuvchi</p>
           </div>
         </div>
       </motion.div>

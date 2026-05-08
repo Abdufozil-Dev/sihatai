@@ -6,6 +6,8 @@ import { cn } from '../lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../context/AuthContext';
 import { GoogleGenAI } from '@google/genai';
+import { reminderService } from '../services/reminderService';
+import { notificationService } from '../services/notificationService';
 
 import { Clinic, Reminder, Settings } from '../types';
 
@@ -15,7 +17,7 @@ interface Expert {
   title: string;
   description: string;
   icon: string;
-  color: string;
+  color: string; 
   bgColor: string;
   systemPrompt: string;
   welcomeMessage: string;
@@ -24,14 +26,25 @@ interface Expert {
 const EXPERTS: Expert[] = [
   {
     id: 'diagnost',
-    name: 'Sihat Diagnost',
-    title: 'KLINIK DIAGNOSTIKA',
-    description: 'Simptomlarni tahlil qilish va salomatlik holati bo\'yicha chuqur tibbiy xulosalar berish tizimi.',
+    name: 'Sihat AI Ekspert',
+    title: 'PROFESSIONAL DIAGNOSTIKA',
+    description: 'Simptomlarni chuqur tahlil qilish, ehtimoliy tashxislarni aniqlash va mos keladigan mutaxassis-shifokorlarni tavsiya etish tizimi.',
     icon: '🩺',
     color: 'text-white',
     bgColor: 'bg-blue-600',
-    systemPrompt: 'Siz Sihat Diagnost - professional tibbiy diagnostika bo\'yicha AI ekspertsiz. Foydalanuvchi simptomlarini tahlil qiling va ehtimoliy sabablarni ayting. Har doim shifokorga murojaat qilishni tavsiya eting.',
-    welcomeMessage: 'Assalomu alaykum! Men Sihat Diagnostman. Sizni nima bezovta qilyapti? Simptomlaringizni yozing, men ularni tahlil qilishga yordam beraman.'
+    systemPrompt: `Siz Sihat AI Ekspertsiz - professional tibbiy diagnostika va maslahat bo'yicha yuqori darajadagi AI tizimisiz.
+    
+    Qoidalaringiz:
+    1. FAQAT tibbiyot va salomatlikka oid savollarga javob bering. Boshqa har qanday mavzudagi savollarga (siyosat, sport, texnika va h.k.) qat'iy ravishda: "Men faqat tibbiyotga oid savollarga javob beraman" deb javob bering.
+    2. Foydalanuvchi simptomlarini (masalan: bosh og'rig'i, isitma) yozsa, ularni tahlil qiling va quyidagi shifokorlardan mosini tavsiya qiling:
+        - Dr. Aliyev (Nevrolog): Dushanba-Seshanba, 12:00-14:00.
+        - Dr. Karimov (Kardiolog): Chorshanba-Payshanba, 09:00-13:00.
+        - Dr. Ahmedova (Pediatr): Har kuni, 10:00-16:00.
+        - Dr. Tursunov (Dermatolog): Juma-Shanba, 09:00-14:00.
+    3. Shifokorni tavsiya qilgandan so'ng, foydalanuvchidan: "Sizni ushbu shifokor qabuliga bron qilib qo'yaymi? Qaysi vaqt sizga qulay?" deb so'rang.
+    4. Foydalanuvchi vaqtni aytsa (masalan: "soat 14:00 ga"), uni tasdiqlang.
+    5. Har doim professional, xushmuomala va aniq bo'ling. Har qanday holatda ham yakuniy tashxis uchun shifokorga ko'rinish kerakligini eslatib o'ting.`,
+    welcomeMessage: 'Assalomu alaykum! Men Sihat AI Ekspertman. Sog\'lig\'ingiz bo\'yicha qanday savollaringiz bor? Simptomlaringizni yozing, men ularni tahlil qilib, kerakli mutaxassisni tavsiya qilaman.'
   },
   {
     id: 'psixolog',
@@ -41,7 +54,7 @@ const EXPERTS: Expert[] = [
     icon: '🧠',
     color: 'text-white',
     bgColor: 'bg-slate-800',
-    systemPrompt: 'Siz Sihat Psixolog - professional psixologik yordam bo\'yicha AI ekspertsiz. Foydalanuvchiga ruhiy xotirjamlik, stressni boshqarish va emotsional barqarorlik bo\'yicha yordam bering.',
+    systemPrompt: 'Siz Sihat Psixolog - professional psixologik yordam bo\'yicha AI ekspertsiz. FAQAT psixologiya va ruhiy salomatlikka oid savollarga javob bering. Boshqa savollarga: "Men faqat ruhiy salomatlikka oid savollarga javob beraman" deb javob bering.',
     welcomeMessage: 'Assalomu alaykum! Men Sihat Psixologman. Sizni nima bezovta qilyapti yoki qanday mavzuda suhbatlashishni istaysiz?'
   },
   {
@@ -52,7 +65,7 @@ const EXPERTS: Expert[] = [
     icon: '🥗',
     color: 'text-white',
     bgColor: 'bg-emerald-600',
-    systemPrompt: 'Siz Sihat Nutrisiolog - sog\'lom ovqatlanish va metabolizm bo\'yicha AI ekspertsiz. Foydalanuvchiga individual ovqatlanish rejasi va sog\'lom turmush tarzi bo\'yicha maslahatlar bering.',
+    systemPrompt: 'Siz Sihat Nutrisiolog - sog\'lom ovqatlanish va metabolizm bo\'yicha AI ekspertsiz. FAQAT ovqatlanish, parhez va metabolizmga oid savollarga javob bering. Boshqa savollarga: "Men faqat ovqatlanish va ratsionga oid savollarga javob beraman" deb javob bering.',
     welcomeMessage: 'Assalomu alaykum! Men Sihat Nutrisiologman. Sog\'lom ovqatlanish va metabolizmni yaxshilash bo\'yicha savollaringiz bormi?'
   }
 ];
@@ -417,29 +430,46 @@ export default function Consultation() {
       
       const aiResponseText = response.text || '';
       
-      // Detect if user is confirming a time
+      // Detect if user is confirming a time and doctor
       const timeMatch = input.match(/(\d{2}:\d{2})/);
-      if (timeMatch && messages.some(m => m.role === 'assistant' && m.content.toLowerCase().includes('bron'))) {
+      const isBookingConfirmation = timeMatch && (
+        messages.some(m => m.role === 'assistant' && (m.content.toLowerCase().includes('bron') || m.content.toLowerCase().includes('qabul'))) ||
+        aiResponseText.toLowerCase().includes('tasdiq') ||
+        aiResponseText.toLowerCase().includes('muvaffaqiyatli')
+      );
+
+      if (isBookingConfirmation) {
         const time = timeMatch[1];
-        const reminder: Reminder = {
-          id: Date.now().toString(),
-          userId: tg?.initDataUnsafe?.user?.id?.toString() || 'demo',
-          title: `Shifokor qabuli (${time})`,
-          time: time,
-          days: ['Dushanba'], // Default or derived
-          isActive: true
-        };
-        const savedReminders = JSON.parse(localStorage.getItem('reminders') || '[]');
-        localStorage.setItem('reminders', JSON.stringify([...savedReminders, reminder]));
         
-        // Simulate SMS
-        setTimeout(() => {
-          if (tg?.showConfirm) {
-            tg.showConfirm(`SMS yuborildi: Sizning qabulingiz ${time} ga muvaffaqiyatli belgilandi.`);
-          } else {
-            alert(`SMS yuborildi: Sizning qabulingiz ${time} ga muvaffaqiyatli belgilandi.`);
-          }
-        }, 1500);
+        // Save to DB via service (Truly functional)
+        try {
+          // Find doctor name in response
+          const doctorMatch = aiResponseText.match(/Dr\.?\s+\w+/);
+          const doctorName = doctorMatch ? doctorMatch[0] : "Shifokor";
+
+          await reminderService.addReminder({
+            userId: user.uid,
+            medicineName: `Qabul: ${doctorName}`,
+            dosage: "Konsultatsiya",
+            time: time,
+            days: ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Yakshanba'],
+            isActive: true
+          });
+          
+          // Send instant notification via server API
+          await fetch('/api/send-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chatId: user.uid,
+              message: `✅ *MUVAFFAQIYATLI BRON QILINDI!*\n\n👨‍⚕️ *Shifokor:* ${doctorName}\n⏰ *Vaqt:* ${time}\n\nSizga belgilangan vaqtdan 15 daqiqa oldin yana bir bor eslatma yuboramiz.`
+            })
+          });
+
+          if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        } catch (err) {
+          console.error("Booking error:", err);
+        }
       }
 
       const assistantMessage: Message = {
@@ -628,62 +658,64 @@ export default function Consultation() {
     );
   }
 
-  return (
-    <div className="space-y-10 pb-32">
-      {/* Header */}
-      <div className="pt-12 flex items-center gap-4">
-        <button 
-          onClick={() => navigate(-1)}
-          className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all"
-        >
-          <ChevronLeft size={24} strokeWidth={2.5} />
-        </button>
-        <div>
-          <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight">EKSPERTLAR</h1>
-          <p className="text-[#2563EB] font-bold text-[10px] mt-1 uppercase tracking-widest">YORDAMCHINI TANLANG</p>
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] pb-24">
+        {/* Header */}
+        <div className="pt-14 px-6 mb-8">
+          <div className="flex items-center gap-4 mb-2">
+            <button 
+              onClick={() => navigate(-1)}
+              className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-90 transition-all"
+            >
+              <ChevronLeft size={20} strokeWidth={2.5} />
+            </button>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">AI EKSPERTLAR</h1>
+          </div>
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] ml-1">Sog'lig'ingiz uchun professional yordam</p>
         </div>
-      </div>
 
-      {/* Experts List */}
-      <div className="space-y-4">
-        {EXPERTS.map((expert) => (
-          <motion.button
-            key={expert.id}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleSelectExpert(expert)}
-            className="w-full bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-5 text-left group relative overflow-hidden transition-all hover:border-blue-100 hover:shadow-lg hover:shadow-blue-50/30"
-          >
-            {/* Decorative background element */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50/50 rounded-full -mr-8 -mt-8 opacity-40 group-hover:bg-blue-50/50 transition-colors" />
-            
-            <div className={cn(
-              "w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-md relative z-10 transition-transform group-hover:scale-105 shrink-0",
-              expert.bgColor
-            )}>
-              <img 
-                src={`https://emojicdn.elk.sh/${expert.icon}?style=apple`} 
-                alt={expert.name}
-                className="w-10 h-10 object-contain"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            
-            <div className="flex-1 relative z-10 space-y-1">
-              <div>
-                <h3 className="text-lg font-bold text-[#0F172A] tracking-tight leading-none mb-1.5">{expert.name}</h3>
-                <p className="text-[10px] font-bold text-[#2563EB] uppercase tracking-widest leading-none">{expert.title}</p>
+        <div className="px-6 space-y-4">
+          {EXPERTS.map((expert) => (
+            <motion.button
+              key={expert.id}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleSelectExpert(expert)}
+              className="w-full bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-5 text-left group hover:border-blue-200 transition-all relative overflow-hidden"
+            >
+              <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0 shadow-lg", expert.bgColor)}>
+                <img 
+                  src={`https://emojicdn.elk.sh/${expert.icon}?style=apple`} 
+                  alt={expert.name}
+                  className="w-8 h-8 object-contain"
+                  referrerPolicy="no-referrer"
+                />
               </div>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2 pr-6">
-                {expert.description}
+              <div className="flex-1 min-w-0 pr-4">
+                <p className="text-blue-600 text-[9px] font-bold uppercase tracking-widest mb-1">{expert.title}</p>
+                <h3 className="text-lg font-bold text-slate-900 mb-1">{expert.name}</h3>
+                <p className="text-slate-500 text-xs font-medium leading-snug line-clamp-2">{expert.description}</p>
+              </div>
+              <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shrink-0">
+                <ChevronRight size={20} />
+              </div>
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Info Card */}
+        <div className="mt-8 px-6">
+          <div className="bg-emerald-50 rounded-[2rem] p-6 border border-emerald-100 flex items-start gap-4">
+            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shrink-0">
+              <Brain size={20} />
+            </div>
+            <div>
+              <h4 className="text-emerald-800 font-bold text-sm mb-1 uppercase tracking-tight">Xavfsizlik birinchi o'rinda</h4>
+              <p className="text-emerald-700/80 text-[11px] font-medium leading-relaxed">
+                AI maslahatlari faqat ma'lumot berish uchun mo'ljallangan. Jiddiy muammolarda har doim shifokor bilan shaxsan maslahatlashing.
               </p>
             </div>
-            
-            <div className="text-slate-200 group-hover:text-blue-500 transition-all group-hover:translate-x-1 shrink-0 pr-1">
-              <ChevronRight size={20} />
-            </div>
-          </motion.button>
-        ))}
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
 }
