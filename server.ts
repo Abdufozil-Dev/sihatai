@@ -1,11 +1,4 @@
 import 'dotenv/config';
-
-console.log('ENV CHECK:', { 
-  token: process.env.TELEGRAM_BOT_TOKEN ? 'EXISTS' : 'MISSING', 
-  supabase: process.env.SUPABASE_URL ? 'EXISTS' : 'MISSING', 
-  node_env: process.env.NODE_ENV 
-});
-
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
@@ -14,7 +7,6 @@ import TelegramBot from 'node-telegram-bot-api';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 let botInstance: TelegramBot | null = null;
-
 let supabaseAdmin: SupabaseClient | null = null;
 
 function mapUserRowToProfile(row: any) {
@@ -64,11 +56,7 @@ function mapUserPatchToRow(id: string, patch: any) {
   setIfDefined('last_request_date', patch.lastRequestDate);
   setIfDefined('is_blocked', patch.isBlocked);
   if (patch.createdAt !== undefined) {
-    // accept number or string; store as timestamptz
-    const dt =
-      typeof patch.createdAt === 'number'
-        ? new Date(patch.createdAt)
-        : new Date(String(patch.createdAt));
+    const dt = typeof patch.createdAt === 'number' ? new Date(patch.createdAt) : new Date(String(patch.createdAt));
     if (!isNaN(dt.getTime())) row.created_at = dt.toISOString();
   }
   return row;
@@ -90,243 +78,179 @@ function mapReminderRow(row: any) {
 
 function getSupabaseAdmin(): SupabaseClient {
   if (supabaseAdmin) return supabaseAdmin;
-  const rawUrl = process.env.SUPABASE_URL?.trim();
+  const url = process.env.SUPABASE_URL?.trim().replace(/\/rest\/v1\/?$/i, '');
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (!rawUrl || !key) {
-    throw new Error('SUPABASE_URL va SUPABASE_SERVICE_ROLE_KEY .env da yo‘q');
-  }
-  const url = rawUrl.replace(/\/rest\/v1\/?$/i, '');
-  supabaseAdmin = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  if (key.startsWith('eyJ')) {
-    console.warn(
-      "⚠️ SUPABASE_SERVICE_ROLE_KEY eski JWT ko‘rinishda. Agar loyihada Legacy API keys o‘chirilgan bo‘lsa, Project API'dagi yangi secret key (sb_secret_...) ni qo‘ying."
-    );
-  }
-  console.log('✅ Supabase (service role) ulandi');
+  if (!url || !key) throw new Error('Supabase configuration missing');
+  supabaseAdmin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   return supabaseAdmin;
 }
 
 async function startServer() {
   const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+  const PORT = Number(process.env.PORT) || 3000;
+  const appUrl = process.env.APP_URL || 'https://your-public-url.com';
 
   app.use(cors());
   app.use(express.json({ limit: '15mb' }));
 
-  // Cleanup old bot instance if exists
   if (botInstance) {
-    console.log('⚠️ Stopping old bot instance...');
     botInstance.stopPolling();
     botInstance = null;
   }
 
-  // Initialize Telegram Bot
   botInstance = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN!);
+  botInstance.setWebHook('').catch(() => {});
+  botInstance.startPolling({ interval: 1000, allowed_updates: ['message', 'callback_query'] });
 
-  // Test bot connection
-  botInstance.getMe().then((botInfo) => {
-    console.log('✅ Bot connected:', botInfo.username);
-  }).catch((err) => {
-    console.error('❌ Bot connection error:', err.message);
+  botInstance.on('message', async (msg) => {
+    if (msg.text?.trim() === '/start') {
+      const fullName = `${msg.from?.first_name || ''} ${msg.from?.last_name || ''}`.trim() || 'Foydalanuvchi';
+      const welcomeMessage = `🩺 *Sihat AI ga xush kelibsiz!*\n\nIsmingizni yozing yoki quyidagi tugmani bosing\n(hozir profilda: ${fullName}).\n\nIsmdan so'ng telefon nomeringizni so'raymiz — shundan keyin ilova ochiladi.`;
+      
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '✅ Telegramdan ismni olish', callback_data: 'get_name_from_tg' }],
+          [{ text: '🚀 Ilovani ochish', web_app: { url: appUrl } }]
+        ]
+      };
+
+      try {
+        await botInstance!.sendMessage(msg.chat.id, welcomeMessage, { parse_mode: 'Markdown', reply_markup: keyboard });
+      } catch (err) {}
+    }
   });
 
-  // Start polling for bot commands
-  botInstance.setWebHook('').catch((err) => console.log('WebHook clear:', err));
-  botInstance.startPolling({ interval: 1000, allowed_updates: ['message'] });
-
-  // Handle /start command
-  botInstance.on('message', (msg) => {
-    console.log('📩 Message received:', {
-      text: msg.text,
-      chatId: msg.chat.id,
-      username: msg.from?.username
-    });
-
-    if (msg.text?.trim() === '/start') {
-      const appUrl = process.env.APP_URL || 'https://your-public-url.com';
-      console.log('📤 Sending start message with URL:', appUrl);
-      
-      botInstance!.sendMessage(msg.chat.id, 'Salom! Sihat AI Mini App ni ochish uchun quyidagi tugmani bosing:', {
+  botInstance.on('callback_query', async (query) => {
+    if (query.data === 'get_name_from_tg' && query.message) {
+      const fullName = `${query.from.first_name || ''} ${query.from.last_name || ''}`.trim() || 'Foydalanuvchi';
+      await botInstance!.answerCallbackQuery(query.id, { text: `Ism qabul qilindi: ${fullName}` });
+      const phoneRequestMessage = `✅ *Ismingiz:* ${fullName}\n\nEndi telefon raqamingizni yuboring — sog'liq ma'lumotlaringizni saqlash uchun kerak.`;
+      await botInstance!.sendMessage(query.message.chat.id, phoneRequestMessage, {
+        parse_mode: 'Markdown',
         reply_markup: {
-          inline_keyboard: [[
-            { text: '🩺 Mini App Ochish', web_app: { url: appUrl } }
-          ]]
+          keyboard: [[{ text: '📱 Telefon raqamni yuborish', request_contact: true }]],
+          resize_keyboard: true,
+          one_time_keyboard: true
         }
-      }).then(() => {
-        console.log('✅ Message sent successfully');
-      }).catch((err) => {
-        console.error('❌ Send message error:', err.message);
       });
     }
   });
 
-  botInstance.on('polling_error', (error) => {
-    if (!error.message.includes('409')) {
-      console.error('⚠️ Polling error:', error.message);
+  botInstance.on('contact', async (msg) => {
+    if (msg.contact) {
+      const fullName = `${msg.from?.first_name || ''} ${msg.from?.last_name || ''}`.trim() || 'Foydalanuvchi';
+      const successMessage = `✅ *Rahmat, ${fullName}! Siz ro'yxatdan o'tdingiz!*\n\n👋 *Sihat AI ga xush kelibsiz!*\nIlovani ochib sog'lig'ingizni kuzatishni boshlang.`;
+      await botInstance!.sendMessage(msg.chat.id, successMessage, {
+        parse_mode: 'Markdown',
+        reply_markup: { remove_keyboard: true, inline_keyboard: [[{ text: '🩺 Sihat Ai ni ochish', web_app: { url: appUrl } }]] }
+      });
     }
   });
 
-  console.log('✅ Telegram Bot initialized and polling started');
+  app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
-  app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
-
-  // Send notification via Telegram Bot
   app.post('/api/send-notification', async (req, res) => {
     const { chatId, message } = req.body;
-    if (!chatId || !message) return res.status(400).json({ error: 'Missing chatId or message' });
-
+    if (!chatId || !message || !botInstance) return res.status(400).json({ error: 'Invalid request' });
     try {
-      if (!botInstance) return res.status(500).json({ error: 'Bot not initialized' });
       await botInstance.sendMessage(chatId, message);
       res.json({ success: true });
     } catch (err) {
-      console.error('Telegram send error:', err);
-      res.status(500).json({ error: 'Failed to send notification' });
+      res.status(500).json({ error: 'Failed to send' });
     }
   });
 
-  // Users (Supabase)
   app.get('/api/users', async (_req, res) => {
     try {
-      const sb = getSupabaseAdmin();
-      const { data, error } = await sb
-        .from('users')
-        .select('*')
-        .order('updated_at', { ascending: false, nullsFirst: false })
-        .limit(500);
-      if (error) return res.status(500).json({ error: error.message });
+      const { data, error } = await getSupabaseAdmin().from('users').select('*').order('updated_at', { ascending: false }).limit(500);
+      if (error) throw error;
       res.json((data || []).map(mapUserRowToProfile));
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      res.status(500).json({ error: msg });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   app.get('/api/users/:id', async (req, res) => {
     try {
-      const sb = getSupabaseAdmin();
-      const id = String(req.params.id);
-      const { data, error } = await sb.from('users').select('*').eq('id', id).maybeSingle();
-      if (error) return res.status(500).json({ error: error.message });
-      res.json(mapUserRowToProfile(data) || null);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      res.status(500).json({ error: msg });
+      const { data, error } = await getSupabaseAdmin().from('users').select('*').eq('id', req.params.id).maybeSingle();
+      if (error) throw error;
+      res.json(mapUserRowToProfile(data));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   app.patch('/api/users/:id', async (req, res) => {
     try {
-      const sb = getSupabaseAdmin();
-      const id = String(req.params.id);
-      const patch = req.body || {};
-      const payload = mapUserPatchToRow(id, patch);
-      if (!payload.created_at) payload.created_at = new Date().toISOString();
-      const { data, error } = await sb.from('users').upsert(payload, { onConflict: 'id' }).select('*').maybeSingle();
-      if (error) return res.status(500).json({ error: error.message });
-      res.json({ success: true, user: mapUserRowToProfile(data) || null });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      res.status(500).json({ error: msg });
+      const payload = mapUserPatchToRow(req.params.id, req.body);
+      const { data, error } = await getSupabaseAdmin().from('users').upsert(payload, { onConflict: 'id' }).select('*').maybeSingle();
+      if (error) throw error;
+      res.json({ success: true, user: mapUserRowToProfile(data) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
-  // Reminders (Supabase)
   app.get('/api/reminders', async (req, res) => {
     try {
-      const sb = getSupabaseAdmin();
       const userId = String(req.query.userId || '').trim();
-      if (!userId) return res.status(400).json({ error: 'userId kerak' });
-      const { data, error } = await sb
-        .from('reminders')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      if (error) return res.status(500).json({ error: error.message });
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      const { data, error } = await getSupabaseAdmin().from('reminders').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+      if (error) throw error;
       res.json((data || []).map(mapReminderRow));
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      res.status(500).json({ error: msg });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   app.post('/api/reminders', async (req, res) => {
     try {
-      const sb = getSupabaseAdmin();
-      const body = req.body || {};
-      const payload = {
-        user_id: body.userId,
-        medicine_name: body.medicineName,
-        dosage: body.dosage,
-        time: body.time,
-        days: body.days,
-        is_active: body.isActive ?? true,
+      const { data, error } = await getSupabaseAdmin().from('reminders').insert({
+        user_id: req.body.userId,
+        medicine_name: req.body.medicineName,
+        dosage: req.body.dosage,
+        time: req.body.time,
+        days: req.body.days,
+        is_active: req.body.isActive ?? true,
         created_at: new Date().toISOString(),
-      };
-      if (!payload.user_id || !payload.medicine_name || !payload.time) {
-        return res.status(400).json({ error: 'Missing fields' });
-      }
-      const { data, error } = await sb.from('reminders').insert(payload).select('*').maybeSingle();
-      if (error) return res.status(500).json({ error: error.message });
+      }).select('*').maybeSingle();
+      if (error) throw error;
       res.json({ success: true, reminder: mapReminderRow(data) });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      res.status(500).json({ error: msg });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   app.patch('/api/reminders/:id', async (req, res) => {
     try {
-      const sb = getSupabaseAdmin();
-      const id = String(req.params.id);
-      const { isActive } = req.body || {};
-      const { data, error } = await sb
-        .from('reminders')
-        .update({ is_active: Boolean(isActive) })
-        .eq('id', id)
-        .select('*')
-        .maybeSingle();
-      if (error) return res.status(500).json({ error: error.message });
-      res.json({ success: true, reminder: mapReminderRow(data) || null });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      res.status(500).json({ error: msg });
+      const { data, error } = await getSupabaseAdmin().from('reminders').update({ is_active: Boolean(req.body.isActive) }).eq('id', req.params.id).select('*').maybeSingle();
+      if (error) throw error;
+      res.json({ success: true, reminder: mapReminderRow(data) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   app.delete('/api/reminders/:id', async (req, res) => {
     try {
-      const sb = getSupabaseAdmin();
-      const id = String(req.params.id);
-      const { error } = await sb.from('reminders').delete().eq('id', id);
-      if (error) return res.status(500).json({ error: error.message });
+      const { error } = await getSupabaseAdmin().from('reminders').delete().eq('id', req.params.id);
+      if (error) throw error;
       res.json({ success: true });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      res.status(500).json({ error: msg });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
-  // Vite middleware
   if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
+    const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*splat', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    app.get('*splat', (_req, res) => res.sendFile(path.join(distPath, 'index.html')));
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  app.listen(PORT, '0.0.0.0', () => {});
 }
 
 startServer();

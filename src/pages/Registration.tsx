@@ -8,6 +8,7 @@ import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
 
 interface FormData {
   fullName: string;
+  phoneNumber: string;
   age: string;
   gender: 'Erkak' | 'Ayol' | '';
   weight: string;
@@ -16,7 +17,8 @@ interface FormData {
 
 const STEPS = [
   { title: 'Xush kelibsiz', description: "Sog'lig'ingizni nazorat qilishni boshlaymiz", emoji: 'https://emojicdn.elk.sh/🩺?style=apple&size=512' },
-  { title: 'Ismingiz', description: 'Sizga qanday murojaat qilaylik?', emoji: 'https://emojicdn.elk.sh/👤?style=apple&size=512' },
+  { title: 'Ismingiz', description: 'Ismingizni yozing yoki quyidagi tugmani bosing', emoji: 'https://emojicdn.elk.sh/👤?style=apple&size=512' },
+  { title: 'Telefon raqamingiz', description: 'Siz bilan bog\'lanish uchun kerak', emoji: 'https://emojicdn.elk.sh/�?style=apple&size=512' },
   { title: 'Yoshingiz', description: 'Tavsiyalarni aniqroq berish uchun kerak', emoji: 'https://emojicdn.elk.sh/🎂?style=apple&size=512' },
   { title: 'Jinsingiz', description: "Biologik ma'lumotni aniqlash", emoji: 'https://emojicdn.elk.sh/🚻?style=apple&size=512' },
   { title: 'Vazningiz', description: "Hozirgi vazningizni kg da kiriting", emoji: 'https://emojicdn.elk.sh/⚖️?style=apple&size=512' },
@@ -34,11 +36,15 @@ export default function Registration() {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     fullName: user?.displayName || '',
+    phoneNumber: (user as any)?.phoneNumber || '',
     age: user?.age ? String(user.age) : '',
     gender: (user?.gender as 'Erkak' | 'Ayol' | '') || '',
     weight: user?.weight ? String(user.weight) : '',
     height: user?.height ? String(user.height) : '',
   });
+
+  const tgUser = tg?.initUser;
+  const tgFullName = tgUser ? `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() : '';
 
   const isKeyboardVisible = useKeyboardHeight();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -61,17 +67,19 @@ export default function Registration() {
     switch (currentStep) {
       case 1:
         return !formData.fullName.trim();
-      case 2: {
+      case 2:
+        return !formData.phoneNumber.trim() || formData.phoneNumber.length < 7;
+      case 3: {
         const age = Number(formData.age);
         return !Number.isFinite(age) || age < 1 || age > 120;
       }
-      case 3:
+      case 4:
         return !formData.gender;
-      case 4: {
+      case 5: {
         const weight = Number(formData.weight);
         return !Number.isFinite(weight) || weight < 20 || weight > 300;
       }
-      case 5: {
+      case 6: {
         const height = Number(formData.height);
         return !Number.isFinite(height) || height < 50 || height > 250;
       }
@@ -95,8 +103,11 @@ export default function Registration() {
         weight: Number(formData.weight),
         height: Number(formData.height),
       };
-      await userService.updateProfile(user.uid, patch);
-      const updatedUser = { ...user, ...patch };
+      await userService.updateProfile(user.uid, {
+        ...patch,
+        phoneNumber: formData.phoneNumber.trim(),
+      } as any);
+      const updatedUser = { ...user, ...patch, phoneNumber: formData.phoneNumber.trim() };
       
       // Update local state and storage
       setUser(updatedUser);
@@ -186,56 +197,74 @@ export default function Registration() {
                 )}
 
                 {currentStep === 1 && (
-                  <motion.div 
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    className="w-full space-y-6"
-                  >
-                    <div className="flex justify-center">
-                      <img 
-                        src={STEPS[currentStep].emoji} 
-                        alt="emoji" 
-                        className="w-14 h-14" 
-                        loading="eager"
-                      />
-                    </div>
-                    <div className="relative group">
-                      <input 
-                        ref={inputRef}
-                        type="text" 
-                        className="input-field text-center font-sans" 
-                        placeholder="Ismingizni kiriting" 
-                        value={formData.fullName} 
-                        onChange={(e) => updateField('fullName', e.target.value)} 
-                      />
-                    </div>
-                  </motion.div>
-                )}
+                    <motion.div 
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      className="w-full space-y-6"
+                    >
+                      <div className="flex justify-center">
+                        <img 
+                          src={STEPS[currentStep].emoji} 
+                          alt="emoji" 
+                          className="w-14 h-14" 
+                          loading="eager"
+                        />
+                      </div>
+                      <div className="space-y-4">
+                        <div className="relative group">
+                          <input 
+                            ref={inputRef}
+                            type="text" 
+                            className="input-field text-center font-sans" 
+                            placeholder="Ismingizni kiriting" 
+                            value={formData.fullName} 
+                            onChange={(e) => updateField('fullName', e.target.value)} 
+                          />
+                        </div>
+                        {tgFullName && (
+                          <button
+                            onClick={() => updateField('fullName', tgFullName)}
+                            className="w-full py-3 px-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center gap-2 text-slate-600 text-sm font-semibold active:scale-[0.98] transition-all"
+                          >
+                            <span>✅</span>
+                            <span>Telegramdan ismni olish</span>
+                          </button>
+                        )}
+                        <p className="text-xs text-center text-slate-400 font-medium">
+                          (hozir profilda: {formData.fullName || 'Bo\'sh'})
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
 
-                {currentStep === 2 && (
-                  <motion.div 
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    className="w-full flex flex-col items-center gap-6"
-                  >
-                    <img 
-                      src={STEPS[currentStep].emoji} 
-                      alt="emoji" 
-                      className="w-14 h-14" 
-                      loading="eager"
-                    />
-                    <input 
-                        ref={inputRef}
-                        type="number" 
-                        className="input-field text-center max-w-[200px] font-sans" 
-                        placeholder="Yosh" 
-                        value={formData.age} 
-                        onChange={(e) => updateField('age', e.target.value)} 
-                      />
-                  </motion.div>
-                )}
+                  {currentStep === 2 && (
+                    <motion.div 
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      className="w-full space-y-6"
+                    >
+                      <div className="flex justify-center">
+                        <img 
+                          src={STEPS[currentStep].emoji} 
+                          alt="emoji" 
+                          className="w-14 h-14" 
+                          loading="eager"
+                        />
+                      </div>
+                      <div className="relative group">
+                        <input 
+                          ref={inputRef}
+                          type="tel" 
+                          className="input-field text-center font-sans" 
+                          placeholder="+998 90 123 45 67" 
+                          value={formData.phoneNumber} 
+                          onChange={(e) => updateField('phoneNumber', e.target.value)} 
+                        />
+                      </div>
+                    </motion.div>
+                  )}
 
-                {currentStep === 3 && (
+                  {currentStep === 3 && (
                   <motion.div 
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
