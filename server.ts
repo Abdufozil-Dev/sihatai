@@ -115,7 +115,7 @@ async function startServer() {
         inline_keyboard: [
           [{ text: '📊 Statistika', callback_data: 'admin_stats' }],
           [{ text: '👥 Foydalanuvchilar', callback_data: 'admin_users' }],
-          [{ text: '📢 Xabar yuborish (Sms)', callback_data: 'admin_broadcast' }]
+          [{ text: '📢 Xabar yuborish', callback_data: 'admin_broadcast' }]
         ]
       };
 

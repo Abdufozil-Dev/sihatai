@@ -549,7 +549,7 @@ export default function Consultation() {
         {/* Messages Area */}
         <div 
           ref={scrollRef}
-          className="flex-1 overflow-y-auto px-4 pt-4 pb-28 space-y-6 no-scrollbar"
+          className="flex-1 overflow-y-auto px-4 pt-4 pb-32 space-y-6 no-scrollbar"
         >
           {messages.map((msg, idx) => (
             <motion.div
@@ -623,35 +623,37 @@ export default function Consultation() {
         </div>
 
         {/* Input Area */}
-        <div className="fixed bottom-4 left-0 right-0 px-6 z-40">
-          <div className="max-w-md mx-auto bg-white/80 backdrop-blur-2xl p-3 rounded-[2.5rem] border border-white shadow-2xl flex items-center gap-3">
+        <div className="fixed bottom-0 left-0 right-0 px-4 pb-[calc(env(safe-area-inset-bottom,16px)+16px)] pt-4 z-40 bg-gradient-to-t from-[#F1F5F9] via-[#F1F5F9]/90 to-transparent">
+          <div className="max-w-md mx-auto bg-white/95 backdrop-blur-2xl p-2 rounded-[2rem] border border-white shadow-2xl flex items-center gap-2">
             <input 
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
               placeholder="Savolingizni yozing..."
-              className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium px-4 py-2 outline-none text-slate-900 placeholder:text-slate-400"
+              className="flex-1 bg-transparent border-none focus:ring-0 text-[15px] font-medium px-4 py-2 outline-none text-slate-900 placeholder:text-slate-400 min-w-0"
             />
-            <button 
-              onClick={toggleListening}
-              className={cn(
-                "w-12 h-12 aspect-square rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0",
-                isListening ? "bg-rose-100 text-rose-600 shadow-rose-100 shadow-lg" : "bg-slate-50 text-slate-400"
-              )}
-            >
-              {isListening ? <MicOff size={22} className="animate-pulse" /> : <Mic size={22} />}
-            </button>
-            <button 
-              onClick={handleSendMessage}
-              disabled={!input.trim() || isTyping}
-              className={cn(
-                "w-12 h-12 aspect-square rounded-full flex items-center justify-center transition-all shadow-lg active:scale-90 disabled:opacity-50 disabled:scale-100 shrink-0",
-                input.trim() ? "bg-blue-600 text-white shadow-blue-200" : "bg-slate-100 text-slate-400 shadow-none"
-              )}
-            >
-              <Send size={22} />
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button 
+                onClick={toggleListening}
+                className={cn(
+                  "w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-90",
+                  isListening ? "bg-rose-100 text-rose-600 shadow-rose-100 shadow-lg" : "bg-slate-50 text-slate-400"
+                )}
+              >
+                {isListening ? <MicOff size={20} className="animate-pulse" /> : <Mic size={20} />}
+              </button>
+              <button 
+                onClick={handleSendMessage}
+                disabled={!input.trim() || isTyping}
+                className={cn(
+                  "w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-lg active:scale-90 disabled:opacity-50 disabled:scale-100",
+                  input.trim() ? "bg-blue-600 text-white shadow-blue-200" : "bg-slate-100 text-slate-300 shadow-none"
+                )}
+              >
+                <Send size={20} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -659,31 +661,61 @@ export default function Consultation() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 pb-24">
-      <h1 className="text-2xl font-bold text-slate-900 mb-8 uppercase tracking-tight">AI Ekspertlar</h1>
-      <div className="grid gap-4">
-        {EXPERTS.map((expert) => (
-          <motion.button
-            key={expert.id}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => handleSelectExpert(expert)}
-            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 text-left group hover:border-blue-200 transition-all"
+      <div className="min-h-screen bg-white pb-24">
+        {/* Header */}
+        <div className="pt-12 px-6 mb-10 flex items-center gap-5">
+          <button 
+            onClick={() => navigate(-1)}
+            className="w-14 h-14 bg-white rounded-3xl flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all"
           >
-            <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0", expert.bgColor)}>
-              <img 
-                src={`https://emojicdn.elk.sh/${expert.icon}?style=apple`} 
-                alt={expert.name}
-                className="w-8 h-8 object-contain"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-1">{expert.name}</h3>
-              <p className="text-slate-500 text-sm font-medium leading-snug">{expert.description}</p>
-            </div>
-          </motion.button>
-        ))}
+            <ChevronLeft size={28} strokeWidth={2.5} />
+          </button>
+          <div>
+            <h1 className="text-[28px] font-black text-[#0F172A] tracking-tight uppercase leading-none">AI EKSPERTLAR</h1>
+            <p className="text-[#2563EB] font-bold text-[10px] mt-2 uppercase tracking-[0.15em] leading-none">IXTISOSLASHGAN YORDAMCHINI TANLANG</p>
+          </div>
+        </div>
+
+        <div className="px-6 space-y-5">
+          {EXPERTS.map((expert) => (
+            <motion.button
+              key={expert.id}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleSelectExpert(expert)}
+              className="w-full bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 text-left group transition-all hover:border-blue-100 hover:shadow-xl hover:shadow-blue-50/50"
+            >
+              <div className={cn(
+                "w-20 h-20 rounded-3xl flex items-center justify-center shadow-lg shrink-0 transition-transform group-hover:scale-105",
+                expert.bgColor
+              )}>
+                <img 
+                  src={
+                    expert.id === 'diagnost' ? "https://cdn-icons-png.flaticon.com/512/3306/3306566.png" : // Stethoscope
+                    expert.id === 'psixolog' ? "https://cdn-icons-png.flaticon.com/512/3050/3050525.png" : // Brain
+                    "https://cdn-icons-png.flaticon.com/512/2917/2917633.png" // Salad/Nutrition
+                  } 
+                  alt={expert.name}
+                  className="w-12 h-12 object-contain brightness-0 invert"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              
+              <div className="flex-1 space-y-1.5 min-w-0">
+                <div>
+                  <h3 className="text-[20px] font-bold text-[#0F172A] tracking-tight leading-tight">{expert.name}</h3>
+                  <p className="text-[10px] font-bold text-[#2563EB] uppercase tracking-widest">{expert.title}</p>
+                </div>
+                <p className="text-[13px] text-slate-500 font-medium leading-snug line-clamp-2">
+                  {expert.description}
+                </p>
+              </div>
+              
+              <div className="text-slate-200 group-hover:text-blue-500 transition-all shrink-0">
+                <ChevronRight size={24} />
+              </div>
+            </motion.button>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
 }

@@ -29,11 +29,6 @@ const adminIdsFromEnv = String((import.meta as any).env?.VITE_ADMIN_IDS || '')
   .filter(Boolean);
 const ADMIN_IDS = new Set(['6413273899', '7820708813', ...adminIdsFromEnv]);
 
-const isPlaceholderName = (value?: string | null) => {
-  const normalized = (value || '').trim().toLowerCase();
-  return !normalized || normalized === "noma'lum" || normalized === 'nomalum' || normalized === 'foydalanuvchi';
-};
-
 const isRegistrationComplete = (user: User | null) => {
   if (!user) return false;
   const displayName = (user.displayName || '').trim().toLowerCase();
@@ -118,7 +113,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { path: '/', icon: Home, label: 'ASOSIY' },
     { path: '/clinics', icon: Briefcase, label: 'KLINIKA' },
     { path: '/consult', icon: Sparkles, label: 'SALOMATLIK MARKAZI', isCenter: true },
-    { path: '/reminders', icon: Pill, label: 'DORILAR' },
+    { path: '/reminders', icon: Pill, label: 'ESLATMALAR' },
     { path: '/profile', icon: UserIcon, label: 'PROFIL' },
   ];
 
@@ -217,7 +212,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
             className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs tracking-widest uppercase shadow-lg shadow-blue-100"
           >
             Yangilash
-                                                                                                                                                                        </button>
+          </button>
           <pre className="mt-8 p-4 bg-slate-50 rounded-lg text-[10px] text-left overflow-auto max-w-full text-rose-600 border border-rose-100">
             {this.state.error?.message}
             {this.state.error?.stack}

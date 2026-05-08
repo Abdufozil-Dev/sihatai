@@ -10,12 +10,10 @@ import {
   Bell,
   Sparkles,
   Pill,
-  Search,
-  Check,
-  User
+  Search
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { cn, isPlaceholderName } from '../lib/utils';
 import CustomModal from '../components/CustomModal';
 import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
@@ -210,8 +208,8 @@ export default function Home() {
 
     if (user) {
       if (user.bloodPressure) setBpPulse(user.bloodPressure);
-      if (user.weight) setWeight(user.weight);
-      if (user.height) setHeight(user.height);
+      if (user.weight) setWeight(String(user.weight));
+      if (user.height) setHeight(String(user.height));
       
       setHealthInput({
         bp: user.bloodPressure || '',
@@ -293,10 +291,16 @@ export default function Home() {
   ];
 
   const [nextReminder, setNextReminder] = useState<any>(null);
-  const displayName = !isPlaceholderName(user?.displayName)
-    ? user?.displayName?.trim()
-    : (user?.username ? `@${user.username}` : 'Foydalanuvchi');
-  const firstName = displayName ? displayName.split(' ')[0] : 'Foydalanuvchi';
+  
+  const getDisplayName = () => {
+    if (!user) return 'Foydalanuvchi';
+    if (!isPlaceholderName(user.displayName)) return user.displayName?.trim() || 'Foydalanuvchi';
+    if (user.username) return `@${user.username}`;
+    return 'Foydalanuvchi';
+  };
+
+  const displayName = getDisplayName();
+  const firstName = displayName.split(' ')[0];
 
   useEffect(() => {
     try {
@@ -462,7 +466,7 @@ export default function Home() {
                 <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Sizning BMI ko'rsatkichingiz</p>
                 <p className="text-3xl font-black text-blue-700">{calculateBMI()}</p>
                 <p className="text-[11px] font-bold text-blue-500 uppercase tracking-wider mt-1">
-                  Holat: {getBMIStatus(parseFloat(calculateBMI()!))}
+                  Holat: {getBMIStatus(parseFloat(calculateBMI() || '0'))}
                 </p>
               </div>
             )}
@@ -539,7 +543,7 @@ export default function Home() {
       <motion.div 
         whileTap={{ scale: 0.98 }}
         onClick={() => handleNavigate('/consult')}
-        className="bg-blue-600 rounded-[2rem] p-6 text-white shadow-xl shadow-blue-200/40 relative overflow-hidden group cursor-pointer"
+        className="bg-blue-500 rounded-[2rem] p-6 text-white shadow-xl shadow-blue-200/40 relative overflow-hidden group cursor-pointer"
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl" />
         <div className="relative z-10 space-y-3">
@@ -556,7 +560,7 @@ export default function Home() {
             Simptomlaringizni yozing va sun'iy intellekt yordamida tezkor tahlil hamda tavsiyalarni oling.
           </p>
           <div className="pt-0.5">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-700 rounded-lg text-[9px] font-bold uppercase tracking-wider shadow-lg">
+            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-500 rounded-lg text-[9px] font-bold uppercase tracking-wider shadow-lg">
               Boshlash <ChevronRight size={12} />
             </span>
           </div>
