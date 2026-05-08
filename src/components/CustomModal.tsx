@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -26,6 +26,20 @@ export default function CustomModal({
   actions 
 }: CustomModalProps) {
   const isKeyboardVisible = useKeyboardHeight();
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        const firstInput = modalRef.current?.querySelector('input, textarea') as HTMLInputElement | HTMLTextAreaElement;
+        if (firstInput) {
+          firstInput.focus();
+          firstInput.click();
+        }
+      }, 300); // Modals need a bit more time for animation
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   return (
     <AnimatePresence>
@@ -43,6 +57,7 @@ export default function CustomModal({
           {/* Modal */}
           <div className="fixed inset-0 flex items-center justify-center p-6 z-[101] pointer-events-none">
             <motion.div
+              ref={modalRef}
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}

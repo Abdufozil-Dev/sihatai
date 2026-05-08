@@ -3,29 +3,36 @@ import { useState, useEffect } from 'react';
 const tg = window.Telegram?.WebApp;
 
 /**
- * Telegram Mini App native viewport detection.
- * visualViewport causes bounces in TMA, so we use Telegram's internal height tracking.
+ * Telegram Mini App Native Keyboard Detection
+ * Uses Telegram's viewportHeight and viewportStableHeight for maximum accuracy and smoothness.
  */
 export function useKeyboardHeight() {
-  const [isExpanded, setIsExpanded] = useState(tg?.isExpanded || false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
     if (!tg) return;
 
-    const handleViewportChanged = (eventData: { isStateStable: boolean }) => {
-      // Telegram triggers viewportChanged when keyboard opens/closes
-      // We check the stable state to update our layout
-      if (eventData.isStateStable) {
-        setIsExpanded(tg.isExpanded);
-      }
+    const handleViewportChanged = () => {
+      // In TMA, when keyboard opens, viewportHeight becomes significantly smaller 
+      // than the viewportStableHeight (the height without keyboard).
+      const currentHeight = tg.viewportHeight;
+      const stableHeight = tg.viewportStableHeight;
+      
+      // If height difference is more than 120px, keyboard is definitely open
+      const isShowing = currentHeight < stableHeight - 120;
+      setIsKeyboardVisible(isShowing);
     };
 
+    // We don't check for isStateStable here because we want real-time reaction
     tg.onEvent('viewportChanged', handleViewportChanged);
+    
+    // Initial check
+    handleViewportChanged();
+
     return () => {
       tg.offEvent('viewportChanged', handleViewportChanged);
     };
   }, []);
 
-  // Return a boolean or a relative value since TMA handles the actual height
-  return !isExpanded;
+  return isKeyboardVisible;
 }

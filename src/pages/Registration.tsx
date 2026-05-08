@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -41,6 +41,21 @@ export default function Registration() {
   });
 
   const isKeyboardVisible = useKeyboardHeight();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus logic for TMA native feel
+  useEffect(() => {
+    // We need a tiny delay for TMA viewport to be ready and AnimatePresence to mount
+    const timer = setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        // For iOS TMA, sometimes we need to trigger click or additional focus
+        inputRef.current.click();
+      }
+    }, 150); 
+
+    return () => clearTimeout(timer);
+  }, [currentStep]);
 
   const isInvalid = useMemo(() => {
     switch (currentStep) {
@@ -126,7 +141,7 @@ export default function Registration() {
 
       <div 
         className="w-full max-w-md relative z-10 keyboard-safe-transition" 
-        style={{ transform: isKeyboardVisible ? 'translateY(-100px)' : 'translateY(10px)' }}
+        style={{ transform: isKeyboardVisible ? 'translateY(-120px)' : 'translateY(10px)' }}
       >
         <AnimatePresence mode="wait" custom={direction}>
             <motion.div
@@ -186,7 +201,7 @@ export default function Registration() {
                     </div>
                     <div className="relative group">
                       <input 
-                        autoFocus 
+                        ref={inputRef}
                         type="text" 
                         className="input-field text-center font-sans" 
                         placeholder="Ismingizni kiriting" 
@@ -210,13 +225,13 @@ export default function Registration() {
                       loading="eager"
                     />
                     <input 
-                      autoFocus 
-                      type="number" 
-                      className="input-field text-center max-w-[200px] font-sans" 
-                      placeholder="Yosh" 
-                      value={formData.age} 
-                      onChange={(e) => updateField('age', e.target.value)} 
-                    />
+                        ref={inputRef}
+                        type="number" 
+                        className="input-field text-center max-w-[200px] font-sans" 
+                        placeholder="Yosh" 
+                        value={formData.age} 
+                        onChange={(e) => updateField('age', e.target.value)} 
+                      />
                   </motion.div>
                 )}
 
@@ -248,14 +263,14 @@ export default function Registration() {
                       loading="eager"
                     />
                     <div className="flex items-center gap-4 w-full justify-center">
-                      <input
-                        autoFocus
-                        type="number"
-                        className="input-field text-center max-w-[180px] font-sans"
-                        placeholder="0"
-                        value={currentStep === 4 ? formData.weight : formData.height}
-                        onChange={(e) => updateField(currentStep === 4 ? 'weight' : 'height', e.target.value)}
-                      />
+                        <input
+                          ref={inputRef}
+                          type="number"
+                          className="input-field text-center max-w-[180px] font-sans"
+                          placeholder="0"
+                          value={currentStep === 4 ? formData.weight : formData.height}
+                          onChange={(e) => updateField(currentStep === 4 ? 'weight' : 'height', e.target.value)}
+                        />
                       <span className="text-3xl font-black text-blue-200 select-none font-display w-12">{currentStep === 4 ? 'KG' : 'CM'}</span>
                     </div>
                   </motion.div>

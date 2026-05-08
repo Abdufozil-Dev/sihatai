@@ -69,6 +69,6 @@
   }
 
   .keyboard-safe-transition {
-    transition: transform 0.4s ease-out;
+    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 }
