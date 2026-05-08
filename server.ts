@@ -1,4 +1,11 @@
 import 'dotenv/config';
+
+console.log('ENV CHECK:', { 
+  token: process.env.TELEGRAM_BOT_TOKEN ? 'EXISTS' : 'MISSING', 
+  supabase: process.env.SUPABASE_URL ? 'EXISTS' : 'MISSING', 
+  node_env: process.env.NODE_ENV 
+});
+
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
