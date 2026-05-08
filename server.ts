@@ -102,8 +102,29 @@ async function startServer() {
   botInstance.setWebHook('').catch(() => {});
   botInstance.startPolling({ interval: 1000, allowed_updates: ['message', 'callback_query'] });
 
+  // --- Admin Panel Logic ---
+  const ADMIN_IDS = [process.env.ADMIN_ID || '5102555555']; // O'zingizning TG ID'ingizni .env ga qo'shing
+
   botInstance.on('message', async (msg) => {
     const text = msg.text?.trim();
+    const chatId = msg.chat.id;
+    const userId = String(msg.from?.id);
+
+    if (text === '/admin' && ADMIN_IDS.includes(userId)) {
+      const adminMenu = {
+        inline_keyboard: [
+          [{ text: '📊 Statistika', callback_data: 'admin_stats' }],
+          [{ text: '👥 Foydalanuvchilar', callback_data: 'admin_users' }],
+          [{ text: '📢 Xabar yuborish (Sms)', callback_data: 'admin_broadcast' }]
+        ]
+      };
+
+      return botInstance!.sendMessage(chatId, `👨‍💻 *Admin Panelga xush kelibsiz!*\n\nKerakli bo'limni tanlang:`, {
+        parse_mode: 'Markdown',
+        reply_markup: adminMenu
+      });
+    }
+
     if (text === '/start') {
       const chatId = msg.chat.id;
       const userId = String(msg.from?.id);
@@ -152,6 +173,65 @@ async function startServer() {
           one_time_keyboard: true
         }
       });
+    }
+
+    // Handle Admin Callbacks
+    const userId = String(query.from.id);
+    const data = query.data;
+
+    if (data?.startsWith('admin_') && ADMIN_IDS.includes(userId)) {
+      const supabase = getSupabaseAdmin();
+
+      if (data === 'admin_stats') {
+        const { count: usersCount } = await supabase.from('users').select('*', { count: 'exact', head: true });
+        const { count: remindersCount } = await supabase.from('reminders').select('*', { count: 'exact', head: true });
+        const { count: logsCount } = await supabase.from('medicine_logs').select('*', { count: 'exact', head: true });
+
+        const statsText = 
+          `📊 *BOT STATISTIKASI*\n\n` +
+          `👥 Foydalanuvchilar: ${usersCount || 0}\n` +
+          `⏰ Jami eslatmalar: ${remindersCount || 0}\n` +
+          `💊 Ichilgan dorilar: ${logsCount || 0}`;
+
+        return botInstance!.sendMessage(query.message!.chat.id, statsText, { parse_mode: 'Markdown' });
+      }
+
+      if (data === 'admin_users') {
+        const { data: users } = await supabase.from('users').select('display_name, phone').limit(10);
+        let userList = `👥 *OXIRGI 10 FOYDALANUVCHI:*\n\n`;
+        users?.forEach((u, i) => {
+          userList += `${i+1}. ${u.display_name} (${u.phone || 'Tel yo\'q'})\n`;
+        });
+        return botInstance!.sendMessage(query.message!.chat.id, userList, { parse_mode: 'Markdown' });
+      }
+
+      if (data === 'admin_broadcast') {
+        return botInstance!.sendMessage(query.message!.chat.id, 
+          `📢 *XABAR YUBORISH*\n\nBarcha foydalanuvchilarga xabar yuborish uchun quyidagi formatda yozing:\n\n\`/send [xabar matni]\``, 
+          { parse_mode: 'Markdown' }
+        );
+      }
+    }
+  });
+
+  // Handle Broadcast command
+  botInstance.on('message', async (msg) => {
+    const userId = String(msg.from?.id);
+    if (msg.text?.startsWith('/send ') && ADMIN_IDS.includes(userId)) {
+      const broadcastText = msg.text.replace('/send ', '').trim();
+      const supabase = getSupabaseAdmin();
+      const { data: users } = await supabase.from('users').select('id');
+
+      let successCount = 0;
+      if (users) {
+        for (const u of users) {
+          try {
+            await botInstance!.sendMessage(u.id, broadcastText);
+            successCount++;
+          } catch (err) {}
+        }
+      }
+      return botInstance!.sendMessage(msg.chat.id, `✅ Xabar ${successCount} ta foydalanuvchiga yuborildi!`);
     }
   });
 

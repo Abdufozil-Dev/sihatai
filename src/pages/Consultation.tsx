@@ -659,56 +659,57 @@ export default function Consultation() {
   }
 
     return (
-      <div className="min-h-screen bg-[#F8FAFC] pb-24">
+      <div className="min-h-screen bg-white pb-24">
         {/* Header */}
-        <div className="pt-12 px-6 mb-8 flex items-center gap-4">
+        <div className="pt-12 px-6 mb-10 flex items-center gap-5">
           <button 
             onClick={() => navigate(-1)}
-            className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all"
+            className="w-14 h-14 bg-white rounded-3xl flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all"
           >
-            <ChevronLeft size={24} strokeWidth={2.5} />
+            <ChevronLeft size={28} strokeWidth={2.5} />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight uppercase">EKSPERTLAR</h1>
-            <p className="text-[#2563EB] font-bold text-[10px] mt-1 uppercase tracking-widest">YORDAMCHINI TANLANG</p>
+            <h1 className="text-[28px] font-black text-[#0F172A] tracking-tight uppercase leading-none">AI EKSPERTLAR</h1>
+            <p className="text-[#2563EB] font-bold text-[10px] mt-2 uppercase tracking-[0.15em] leading-none">IXTISOSLASHGAN YORDAMCHINI TANLANG</p>
           </div>
         </div>
 
-        <div className="px-6 space-y-4">
+        <div className="px-6 space-y-5">
           {EXPERTS.map((expert) => (
             <motion.button
               key={expert.id}
               whileTap={{ scale: 0.98 }}
               onClick={() => handleSelectExpert(expert)}
-              className="w-full bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-5 text-left group relative overflow-hidden transition-all hover:border-blue-100 hover:shadow-lg hover:shadow-blue-50/30"
+              className="w-full bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 text-left group transition-all hover:border-blue-100 hover:shadow-xl hover:shadow-blue-50/50"
             >
-              {/* Decorative background element */}
-              <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50/50 rounded-full -mr-8 -mt-8 opacity-40 group-hover:bg-blue-50/50 transition-colors" />
-              
               <div className={cn(
-                "w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-md relative z-10 transition-transform group-hover:scale-105 shrink-0",
+                "w-20 h-20 rounded-3xl flex items-center justify-center shadow-lg shrink-0 transition-transform group-hover:scale-105",
                 expert.bgColor
               )}>
                 <img 
-                  src={`https://emojicdn.elk.sh/${expert.icon}?style=apple`} 
+                  src={
+                    expert.id === 'diagnost' ? "https://cdn-icons-png.flaticon.com/512/3306/3306566.png" : // Stethoscope
+                    expert.id === 'psixolog' ? "https://cdn-icons-png.flaticon.com/512/3050/3050525.png" : // Brain
+                    "https://cdn-icons-png.flaticon.com/512/2917/2917633.png" // Salad/Nutrition
+                  } 
                   alt={expert.name}
-                  className="w-10 h-10 object-contain"
+                  className="w-12 h-12 object-contain brightness-0 invert"
                   referrerPolicy="no-referrer"
                 />
               </div>
               
-              <div className="flex-1 relative z-10 space-y-1">
+              <div className="flex-1 space-y-1.5 min-w-0">
                 <div>
-                  <h3 className="text-lg font-bold text-[#0F172A] tracking-tight leading-none mb-1.5">{expert.name}</h3>
-                  <p className="text-[10px] font-bold text-[#2563EB] uppercase tracking-widest leading-none">{expert.title}</p>
+                  <h3 className="text-[20px] font-bold text-[#0F172A] tracking-tight leading-tight">{expert.name}</h3>
+                  <p className="text-[10px] font-bold text-[#2563EB] uppercase tracking-widest">{expert.title}</p>
                 </div>
-                <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2 pr-6">
+                <p className="text-[13px] text-slate-500 font-medium leading-snug line-clamp-2">
                   {expert.description}
                 </p>
               </div>
               
-              <div className="text-slate-200 group-hover:text-blue-500 transition-all group-hover:translate-x-1 shrink-0 pr-1">
-                <ChevronRight size={20} />
+              <div className="text-slate-200 group-hover:text-blue-500 transition-all shrink-0">
+                <ChevronRight size={24} />
               </div>
             </motion.button>
           ))}

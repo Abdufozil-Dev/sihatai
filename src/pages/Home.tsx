@@ -539,25 +539,26 @@ export default function Home() {
       <motion.div 
         whileTap={{ scale: 0.98 }}
         onClick={() => handleNavigate('/consult')}
-        className="bg-blue-600 rounded-[2rem] p-6 text-white shadow-xl shadow-blue-200/40 relative overflow-hidden group cursor-pointer"
+        className="bg-[#2563EB] rounded-[2.5rem] p-8 text-white shadow-xl shadow-blue-100 relative overflow-hidden group cursor-pointer"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl" />
-        <div className="relative z-10 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center">
-              <Sparkles className="text-white" size={22} />
+        <div className="relative z-10 space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-inner">
+              <Sparkles className="text-white" size={28} />
             </div>
             <div>
-              <h3 className="text-[22px] font-bold tracking-tight uppercase">AI DIAGNOSTIKA</h3>
-              <p className="text-blue-100 text-[10px] font-bold uppercase tracking-widest">Sog'lig'ingizni tekshiring</p>
+              <h3 className="text-[24px] font-bold tracking-tight uppercase leading-none">AI DIAGNOSTIKA</h3>
+              <p className="text-white/80 text-[10px] font-bold uppercase tracking-[0.15em] mt-2">SOG'LIG'INGIZNI TEKSHURING</p>
             </div>
           </div>
-          <p className="text-blue-50 text-[13px] font-medium leading-relaxed opacity-90">
+          
+          <p className="text-white text-[15px] font-medium leading-relaxed">
             Simptomlaringizni yozing va sun'iy intellekt yordamida tezkor tahlil hamda tavsiyalarni oling.
           </p>
-          <div className="pt-0.5">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-700 rounded-lg text-[9px] font-bold uppercase tracking-wider shadow-lg">
-              Boshlash <ChevronRight size={12} />
+          
+          <div className="pt-1">
+            <span className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#2563EB] rounded-xl text-[11px] font-extrabold uppercase tracking-widest shadow-lg">
+              BOSHLASH <ChevronRight size={14} strokeWidth={3} />
             </span>
           </div>
         </div>
