@@ -217,12 +217,11 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
             className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs tracking-widest uppercase shadow-lg shadow-blue-100"
           >
             Yangilash
-          </button>
-          {(import.meta as any).env.MODE !== 'production' && (
-            <pre className="mt-8 p-4 bg-slate-50 rounded-lg text-[10px] text-left overflow-auto max-w-full text-rose-600 border border-rose-100">
-              {this.state.error?.message}
-            </pre>
-          )}
+                                                                                                                                                                        </button>
+          <pre className="mt-8 p-4 bg-slate-50 rounded-lg text-[10px] text-left overflow-auto max-w-full text-rose-600 border border-rose-100">
+            {this.state.error?.message}
+            {this.state.error?.stack}
+          </pre>
         </div>
       );
     }
