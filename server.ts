@@ -103,38 +103,36 @@ async function startServer() {
   botInstance.startPolling({ interval: 1000, allowed_updates: ['message', 'callback_query'] });
 
   botInstance.on('message', async (msg) => {
-    if (msg.text?.trim() === '/start') {
+    const text = msg.text?.trim();
+    if (text === '/start') {
       const chatId = msg.chat.id;
       const userId = String(msg.from?.id);
       const appUrl = process.env.APP_URL || 'https://your-public-url.com';
 
       try {
         const supabase = getSupabaseAdmin();
-        const { data: user, error } = await supabase.from('users').select('*').eq('id', userId).maybeSingle();
+        const { data: user } = await supabase.from('users').select('phone').eq('id', userId).maybeSingle();
 
-        if (user && user.phone) {
-          // Foydalanuvchi allaqachon ro'yxatdan o'tgan
-          const welcomeBackMessage = `👋 *Sihat AI ga qaytganingizdan xursandmiz!*\n\nIlovani ochib sog'lig'ingizni kuzatishda davom eting.`;
-          await botInstance!.sendMessage(chatId, welcomeBackMessage, {
+        if (user?.phone) {
+          // Allaqachon ro'yxatdan o'tgan - FAQAT bitta xabar
+          return botInstance!.sendMessage(chatId, `👋 *Sihat AI ga qaytganingizdan xursandmiz!*\n\nIlovani ochib sog'lig'ingizni kuzatishda davom eting.`, {
             parse_mode: 'Markdown',
             reply_markup: {
               inline_keyboard: [[{ text: '🩺 Sihat Ai ni ochish', web_app: { url: appUrl } }]]
             }
           });
-          return;
         }
 
-        // Ro'yxatdan o'tmagan bo'lsa, odatdagi jarayon
+        // Ro'yxatdan o'tmagan - Ro'yxatdan o'tish xabari
         const fullName = `${msg.from?.first_name || ''} ${msg.from?.last_name || ''}`.trim() || 'Foydalanuvchi';
         const welcomeMessage = `🩺 *Sihat AI ga xush kelibsiz!*\n\nIsmingizni yozing yoki quyidagi tugmani bosing\n(hozir profilda: ${fullName}).\n\nIsmdan so'ng telefon nomeringizni so'raymiz — shundan keyin ilova ochiladi.`;
         
-        const keyboard = {
-          inline_keyboard: [
-            [{ text: '✅ Telegramdan ismni olish', callback_data: 'get_name_from_tg' }]
-          ]
-        };
-
-        await botInstance!.sendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown', reply_markup: keyboard });
+        return botInstance!.sendMessage(chatId, welcomeMessage, { 
+          parse_mode: 'Markdown', 
+          reply_markup: {
+            inline_keyboard: [[{ text: '✅ Telegramdan ismni olish', callback_data: 'get_name_from_tg' }]]
+          } 
+        });
       } catch (err) {
         console.error("Start command error:", err);
       }
