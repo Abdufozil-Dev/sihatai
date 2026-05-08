@@ -11,7 +11,8 @@ import {
   Sparkles,
   Pill,
   Search,
-  Check
+  Check,
+  User
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
