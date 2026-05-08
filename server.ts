@@ -109,8 +109,7 @@ async function startServer() {
       
       const keyboard = {
         inline_keyboard: [
-          [{ text: '✅ Telegramdan ismni olish', callback_data: 'get_name_from_tg' }],
-          [{ text: '🚀 Ilovani ochish', web_app: { url: appUrl } }]
+          [{ text: '✅ Telegramdan ismni olish', callback_data: 'get_name_from_tg' }]
         ]
       };
 
@@ -136,13 +135,51 @@ async function startServer() {
     }
   });
 
+  // Handle received contact
   botInstance.on('contact', async (msg) => {
-    if (msg.contact) {
-      const fullName = `${msg.from?.first_name || ''} ${msg.from?.last_name || ''}`.trim() || 'Foydalanuvchi';
-      const successMessage = `✅ *Rahmat, ${fullName}! Siz ro'yxatdan o'tdingiz!*\n\n👋 *Sihat AI ga xush kelibsiz!*\nIlovani ochib sog'lig'ingizni kuzatishni boshlang.`;
-      await botInstance!.sendMessage(msg.chat.id, successMessage, {
+    const chatId = msg.chat.id;
+    const contact = msg.contact;
+    if (!contact) return;
+
+    const firstName = msg.from?.first_name || '';
+    const lastName = msg.from?.last_name || '';
+    const fullName = `${firstName} ${lastName}`.trim() || 'Foydalanuvchi';
+    const appUrl = process.env.APP_URL || 'https://your-public-url.com';
+
+    try {
+      // Save user data to Supabase
+      const supabase = getSupabaseAdmin();
+      const userId = String(msg.from?.id);
+      
+      await supabase.from('users').upsert({
+        id: userId,
+        display_name: fullName,
+        phone: contact.phone_number,
+        username: msg.from?.username || null,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+
+      // Birinchi xabar: Tasdiqlash
+      await botInstance!.sendMessage(chatId, `✅ *Rahmat, ${fullName}! Siz ro'yxatdan o'tdingiz!*`, {
         parse_mode: 'Markdown',
-        reply_markup: { remove_keyboard: true, inline_keyboard: [[{ text: '🩺 Sihat Ai ni ochish', web_app: { url: appUrl } }]] }
+        reply_markup: { remove_keyboard: true }
+      });
+
+      // Ikkinchi xabar: Xush kelibsiz va tugma
+      const welcomeMessage = `👋 *Sihat AI ga xush kelibsiz!*\nIlovani ochib sog'lig'ingizni kuzatishni boshlang.`;
+      await botInstance!.sendMessage(chatId, welcomeMessage, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [[{ text: '🩺 Sihat Ai ni ochish', web_app: { url: appUrl } }]]
+        }
+      });
+    } catch (err) {
+      // Fallback message if DB fails
+      await botInstance!.sendMessage(chatId, `👋 *Sihat AI ga xush kelibsiz!*\nIlovani ochib davom eting.`, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [[{ text: '🩺 Sihat Ai ni ochish', web_app: { url: appUrl } }]]
+        }
       });
     }
   });
