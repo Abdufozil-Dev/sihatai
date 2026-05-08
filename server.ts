@@ -115,7 +115,7 @@ async function startServer() {
 
         if (user?.phone) {
           // Allaqachon ro'yxatdan o'tgan - FAQAT bitta xabar
-          return botInstance!.sendMessage(chatId, `👋 *Sihat AI ga qaytganingizdan xursandmiz!*\n\nIlovani ochib sog'lig'ingizni kuzatishda davom eting.`, {
+          return await botInstance!.sendMessage(chatId, `*Sihat AI ga qaytganingizdan xursandmiz!*\n\nIlovani ochib sog'lig'ingizni kuzatishda davom eting.`, {
             parse_mode: 'Markdown',
             reply_markup: {
               inline_keyboard: [[{ text: '🩺 Sihat Ai ni ochish', web_app: { url: appUrl } }]]
@@ -186,7 +186,7 @@ async function startServer() {
       });
 
       // Ikkinchi xabar: Xush kelibsiz va tugma
-      const welcomeMessage = `👋 *Sihat AI ga xush kelibsiz!*\nIlovani ochib sog'lig'ingizni kuzatishni boshlang.`;
+      const welcomeMessage = `*Sihat AI ga xush kelibsiz!*\n\nIlovani ochib sog'lig'ingizni kuzatishni boshlang.`;
       await botInstance!.sendMessage(chatId, welcomeMessage, {
         parse_mode: 'Markdown',
         reply_markup: {
@@ -195,7 +195,7 @@ async function startServer() {
       });
     } catch (err) {
       // Fallback message if DB fails
-      await botInstance!.sendMessage(chatId, `👋 *Sihat AI ga xush kelibsiz!*\nIlovani ochib davom eting.`, {
+      await botInstance!.sendMessage(chatId, `*Sihat AI ga xush kelibsiz!*\n\nIlovani ochib davom eting.`, {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [[{ text: '🩺 Sihat Ai ni ochish', web_app: { url: appUrl } }]]
