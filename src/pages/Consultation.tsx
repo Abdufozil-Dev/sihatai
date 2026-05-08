@@ -661,61 +661,31 @@ export default function Consultation() {
   }
 
   return (
-      <div className="min-h-screen bg-white pb-24">
-        {/* Header */}
-        <div className="pt-12 px-6 mb-10 flex items-center gap-5">
-          <button 
-            onClick={() => navigate(-1)}
-            className="w-14 h-14 bg-white rounded-3xl flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all"
+    <div className="min-h-screen bg-slate-50 p-6 pb-24">
+      <h1 className="text-2xl font-bold text-slate-900 mb-8 uppercase tracking-tight">AI Ekspertlar</h1>
+      <div className="grid gap-4">
+        {EXPERTS.map((expert) => (
+          <motion.button
+            key={expert.id}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleSelectExpert(expert)}
+            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 text-left group hover:border-blue-200 transition-all"
           >
-            <ChevronLeft size={28} strokeWidth={2.5} />
-          </button>
-          <div>
-            <h1 className="text-[28px] font-black text-[#0F172A] tracking-tight uppercase leading-none">AI EKSPERTLAR</h1>
-            <p className="text-[#2563EB] font-bold text-[10px] mt-2 uppercase tracking-[0.15em] leading-none">IXTISOSLASHGAN YORDAMCHINI TANLANG</p>
-          </div>
-        </div>
-
-        <div className="px-6 space-y-5">
-          {EXPERTS.map((expert) => (
-            <motion.button
-              key={expert.id}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleSelectExpert(expert)}
-              className="w-full bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 text-left group transition-all hover:border-blue-100 hover:shadow-xl hover:shadow-blue-50/50"
-            >
-              <div className={cn(
-                "w-20 h-20 rounded-3xl flex items-center justify-center shadow-lg shrink-0 transition-transform group-hover:scale-105",
-                expert.bgColor
-              )}>
-                <img 
-                  src={
-                    expert.id === 'diagnost' ? "https://cdn-icons-png.flaticon.com/512/3306/3306566.png" : // Stethoscope
-                    expert.id === 'psixolog' ? "https://cdn-icons-png.flaticon.com/512/3050/3050525.png" : // Brain
-                    "https://cdn-icons-png.flaticon.com/512/2917/2917633.png" // Salad/Nutrition
-                  } 
-                  alt={expert.name}
-                  className="w-12 h-12 object-contain brightness-0 invert"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-              
-              <div className="flex-1 space-y-1.5 min-w-0">
-                <div>
-                  <h3 className="text-[20px] font-bold text-[#0F172A] tracking-tight leading-tight">{expert.name}</h3>
-                  <p className="text-[10px] font-bold text-[#2563EB] uppercase tracking-widest">{expert.title}</p>
-                </div>
-                <p className="text-[13px] text-slate-500 font-medium leading-snug line-clamp-2">
-                  {expert.description}
-                </p>
-              </div>
-              
-              <div className="text-slate-200 group-hover:text-blue-500 transition-all shrink-0">
-                <ChevronRight size={24} />
-              </div>
-            </motion.button>
-          ))}
-        </div>
+            <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0", expert.bgColor)}>
+              <img 
+                src={`https://emojicdn.elk.sh/${expert.icon}?style=apple`} 
+                alt={expert.name}
+                className="w-8 h-8 object-contain"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 mb-1">{expert.name}</h3>
+              <p className="text-slate-500 text-sm font-medium leading-snug">{expert.description}</p>
+            </div>
+          </motion.button>
+        ))}
       </div>
-    );
+    </div>
+  );
 }

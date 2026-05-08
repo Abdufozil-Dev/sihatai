@@ -543,7 +543,7 @@ export default function Home() {
       <motion.div 
         whileTap={{ scale: 0.98 }}
         onClick={() => handleNavigate('/consult')}
-        className="bg-blue-500 rounded-[2rem] p-6 text-white shadow-xl shadow-blue-200/40 relative overflow-hidden group cursor-pointer"
+        className="bg-[#2563EB] rounded-[2rem] p-6 text-white shadow-xl shadow-blue-200/40 relative overflow-hidden group cursor-pointer"
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl" />
         <div className="relative z-10 space-y-3">
@@ -557,10 +557,10 @@ export default function Home() {
             </div>
           </div>
           <p className="text-blue-50 text-[13px] font-medium leading-relaxed opacity-90">
-            Simptomlaringizni yozing va sun'iy intellekt yordamida tezkor tahlil hamda tavsiyalarni oling.
+            Simptomlaringizni yozing va sun'iy intellekt yordamida tezkor tavsiyalarni oling
           </p>
           <div className="pt-0.5">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-500 rounded-lg text-[9px] font-bold uppercase tracking-wider shadow-lg">
+            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white text-[#2563EB] rounded-lg text-[9px] font-bold uppercase tracking-wider shadow-lg">
               Boshlash <ChevronRight size={12} />
             </span>
           </div>
