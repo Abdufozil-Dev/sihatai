@@ -36,14 +36,15 @@ const EXPERTS: Expert[] = [
     
     Qoidalaringiz:
     1. FAQAT tibbiyot va salomatlikka oid savollarga javob bering. Boshqa har qanday mavzudagi savollarga (siyosat, sport, texnika va h.k.) qat'iy ravishda: "Men faqat tibbiyotga oid savollarga javob beraman" deb javob bering.
-    2. Foydalanuvchi simptomlarini (masalan: bosh og'rig'i, isitma) yozsa, ularni tahlil qiling va quyidagi shifokorlardan mosini tavsiya qiling:
-       - Dr. Aliyev (Nevrolog): Dushanba-Seshanba, 12:00-14:00.
-       - Dr. Karimov (Kardiolog): Chorshanba-Payshanba, 09:00-13:00.
-       - Dr. Ahmedova (Pediatr): Har kuni, 10:00-16:00.
-       - Dr. Tursunov (Dermatolog): Juma-Shanba, 09:00-14:00.
-    3. Shifokorni tavsiya qilgandan so'ng, foydalanuvchidan: "Sizni ushbu shifokor qabuliga bron qilib qo'yaymi? Qaysi vaqt sizga qulay?" deb so'rang.
-    4. Foydalanuvchi vaqtni aytsa (masalan: "soat 14:00 ga"), uni tasdiqlang va tizimda bron qilishini yakunlang.
-    5. Har doim professional va aniq bo'ling. Har qanday holatda ham yakuniy tashxis uchun shifokorga ko'rinish kerakligini eslatib o'ting.`,
+    2. Foydalanuvchi simptomlarini (masalan: bosh og'rig'i, isitma) yozsa, avval unga maslahatlar bering (nima qilish kerakligi, qanday choralarni ko'rish haqida).
+    3. Maslahatlardan so'ng, quyidagi shifokorlardan aynan shu simptomga mos keladiganini tavsiya qiling va uning ish vaqtlarini ayting:
+       - Dr. Aliyev (Nevrolog) - Bosh og'rig'i, asab tizimi: Dushanba-Seshanba, 12:00-14:00.
+       - Dr. Karimov (Kardiolog) - Yurak, qon bosimi: Chorshanba-Payshanba, 09:00-13:00.
+       - Dr. Ahmedova (Pediatr) - Bolalar salomatligi: Har kuni, 10:00-16:00.
+       - Dr. Tursunov (Dermatolog) - Teri muammolari: Juma-Shanba, 09:00-14:00.
+    4. Tavsiyadan so'ng: "Agar xohlasangiz, sizni ushbu shifokor qabuliga bron qilib qo'yishim mumkin. Qaysi vaqt sizga qulay?" deb so'rang.
+    5. Foydalanuvchi vaqtni aytsa (masalan: "soat 14:00 ga"), uni tasdiqlang va tizimda bron qilishini yakunlang.
+    6. Har doim professional, xushmuomala va aniq bo'ling. Har qanday holatda ham jiddiy muammolarda shifokorga ko'rinish shartligini eslatib o'ting.`,
     welcomeMessage: 'Assalomu alaykum! Men Sihat Diagnostman. Sizni nima bezovta qilyapti? Simptomlaringizni yozing, men ularni tahlil qilishga yordam beraman.'
   },
   {
@@ -612,11 +613,18 @@ export default function Consultation() {
               </div>
             </motion.div>
           ))}
-          {isTyping && (
-            <div className="flex gap-1.5 p-4 bg-white rounded-2xl border border-slate-100 w-20 items-center justify-center shadow-sm rounded-tl-none">
-              <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" />
-              <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]" />
-              <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]" />
+          {isTyping && selectedExpert && (
+            <div className="flex flex-col items-start space-y-2 ml-2 mb-4">
+              <div className="flex items-center gap-3 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex gap-1">
+                  <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce" />
+                  <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]" />
+                  <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  {selectedExpert.name} yozmoqda...
+                </span>
+              </div>
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -661,31 +669,52 @@ export default function Consultation() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 pb-24">
-      <h1 className="text-2xl font-bold text-slate-900 mb-8 uppercase tracking-tight">AI Ekspertlar</h1>
-      <div className="grid gap-4">
-        {EXPERTS.map((expert) => (
-          <motion.button
-            key={expert.id}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => handleSelectExpert(expert)}
-            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 text-left group hover:border-blue-200 transition-all"
+      <div className="min-h-screen bg-[#F8FAFC] pb-24">
+        {/* Header */}
+        <div className="pt-12 px-6 mb-8 flex items-center gap-4">
+          <button 
+            onClick={() => navigate(-1)}
+            className="w-12 h-12 bg-white rounded-3xl flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all"
           >
-            <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0", expert.bgColor)}>
-              <img 
-                src={`https://emojicdn.elk.sh/${expert.icon}?style=apple`} 
-                alt={expert.name}
-                className="w-8 h-8 object-contain"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-1">{expert.name}</h3>
-              <p className="text-slate-500 text-sm font-medium leading-snug">{expert.description}</p>
-            </div>
-          </motion.button>
-        ))}
+            <ChevronLeft size={24} strokeWidth={2.5} />
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight uppercase">AI EKSPERTLAR</h1>
+            <p className="text-[#2563EB] font-bold text-[10px] mt-1 uppercase tracking-widest">IXTISOSLASHGAN YORDAMCHINI TANLANG</p>
+          </div>
+        </div>
+
+        <div className="px-6 space-y-4">
+          {EXPERTS.map((expert) => (
+            <motion.button
+              key={expert.id}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleSelectExpert(expert)}
+              className="w-full bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-5 text-left group relative overflow-hidden transition-all hover:border-blue-100 hover:shadow-lg hover:shadow-blue-50/30"
+            >
+              <div className={cn(
+                "w-20 h-20 rounded-[2rem] flex items-center justify-center shadow-md shrink-0 transition-transform group-hover:scale-105",
+                expert.bgColor
+              )}>
+                <span className="text-4xl">{expert.icon}</span>
+              </div>
+              
+              <div className="flex-1 space-y-1">
+                <div>
+                  <h3 className="text-xl font-bold text-[#0F172A] tracking-tight leading-none mb-1.5">{expert.name}</h3>
+                  <p className="text-[10px] font-bold text-[#2563EB] uppercase tracking-widest leading-none">{expert.title}</p>
+                </div>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2 pr-6">
+                  {expert.description}
+                </p>
+              </div>
+              
+              <div className="text-slate-200 group-hover:text-blue-500 transition-all group-hover:translate-x-1 shrink-0 pr-1">
+                <ChevronRight size={20} />
+              </div>
+            </motion.button>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
 }

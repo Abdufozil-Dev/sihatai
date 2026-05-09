@@ -570,7 +570,7 @@ export default function Home() {
       {/* Upcoming Reminders */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-2">
-          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">ESLATMALAR</h3>
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">ESLATMA</h3>
           <button 
             onClick={() => handleNavigate('/reminders')} 
             className="text-[9px] font-bold text-blue-600 uppercase tracking-widest"

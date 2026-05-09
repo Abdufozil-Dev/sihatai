@@ -113,7 +113,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { path: '/', icon: Home, label: 'ASOSIY' },
     { path: '/clinics', icon: Briefcase, label: 'KLINIKA' },
     { path: '/consult', icon: Sparkles, label: 'SALOMATLIK MARKAZI', isCenter: true },
-    { path: '/reminders', icon: Pill, label: 'ESLATMALAR' },
+    { path: '/reminders', icon: Pill, label: 'ESLATMA' },
     { path: '/profile', icon: UserIcon, label: 'PROFIL' },
   ];
 
