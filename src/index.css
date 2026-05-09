@@ -55,7 +55,7 @@
   }
 
   .input-field {
-    @apply w-full bg-[#F3F7FF] rounded-[20px] border-2 border-transparent p-5 text-xl font-bold transition-all duration-300 outline-none;
+    @apply w-full bg-[#F3F7FF] rounded-[20px] border-2 border-transparent p-5 text-xl font-semibold transition-all duration-300 outline-none;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
   }
 

@@ -119,8 +119,8 @@ export default function Clinics() {
           <ChevronLeft size={24} strokeWidth={2.5} />
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight uppercase">KLINIKALAR</h1>
-          <p className="text-[#2563EB] font-bold text-[10px] mt-1 uppercase tracking-widest">YAQIN MARKAZLAR</p>
+          <h1 className="text-3xl font-semibold text-[#0F172A] tracking-tight uppercase">KLINIKALAR</h1>
+          <p className="text-[#2563EB] font-medium text-[10px] mt-1 uppercase tracking-widest">YAQIN MARKAZLAR</p>
         </div>
       </div>
 
@@ -174,16 +174,16 @@ export default function Clinics() {
                           )}
                         </div>
                         <div className="space-y-1 min-w-0">
-                          <h3 className="text-xl font-bold text-[#0F172A] tracking-tight group-hover:text-blue-600 transition-colors truncate">
+                          <h3 className="text-xl font-semibold text-[#0F172A] tracking-tight group-hover:text-blue-600 transition-colors truncate">
                             {clinic.name}
                           </h3>
-                          <div className="flex items-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                          <div className="flex items-center gap-2 text-slate-400 text-[10px] font-medium uppercase tracking-widest">
                             <MapPin size={12} className="text-blue-500" />
                             <span className="truncate">{clinic.address}</span>
                           </div>
                           <div className="flex gap-2 pt-1">
                             {clinic.services && clinic.services.slice(0, 2).map((service, idx) => (
-                              <span key={idx} className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[8px] font-bold rounded-lg uppercase tracking-wider">
+                              <span key={idx} className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[8px] font-semibold rounded-lg uppercase tracking-wider">
                                 {service}
                               </span>
                             ))}
@@ -208,11 +208,11 @@ export default function Clinics() {
                             </div>
                           ))}
                         </div>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                        <span className="text-[9px] font-medium text-slate-400 uppercase tracking-widest leading-none">
                           {clinic.doctors?.length || 0} shifokor
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded-lg text-amber-600 text-[9px] font-bold shadow-sm shadow-amber-100">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded-lg text-amber-600 text-[9px] font-semibold shadow-sm shadow-amber-100">
                         <Star size={12} fill="currentColor" />
                         <span>4.8</span>
                       </div>
@@ -224,7 +224,7 @@ export default function Clinics() {
                   <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto text-slate-200">
                     <Search size={32} />
                   </div>
-                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Hech narsa topilmadi</p>
+                  <p className="text-slate-400 text-[10px] font-medium uppercase tracking-[0.2em]">Hech narsa topilmadi</p>
                 </div>
               )}
             </motion.div>
@@ -246,8 +246,8 @@ export default function Clinics() {
                   )}
                 </div>
                 <div className="text-center space-y-2">
-                  <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{selectedClinic.name}</h2>
-                  <div className="flex flex-col items-center gap-1 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                  <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">{selectedClinic.name}</h2>
+                  <div className="flex flex-col items-center gap-1 text-slate-400 text-[10px] font-medium uppercase tracking-widest">
                     <div className="flex items-center gap-2">
                       <MapPin size={14} className="text-blue-500" />
                       <span>{selectedClinic.address}</span>
@@ -262,7 +262,7 @@ export default function Clinics() {
                 </div>
 
                 {selectedClinic.description && (
-                  <p className="text-sm text-slate-500 text-center font-medium leading-relaxed italic">
+                  <p className="text-sm text-slate-500 text-center font-normal leading-relaxed italic">
                     "{selectedClinic.description}"
                   </p>
                 )}
@@ -270,7 +270,7 @@ export default function Clinics() {
                 <div className="grid grid-cols-2 gap-4 pt-4">
                   <a 
                     href={`tel:${selectedClinic.phone}`}
-                    className="flex items-center justify-center gap-3 bg-slate-50 h-14 rounded-2xl border border-slate-100 text-slate-900 font-bold text-xs active:scale-95 transition-all"
+                    className="flex items-center justify-center gap-3 bg-slate-50 h-14 rounded-2xl border border-slate-100 text-slate-900 font-semibold text-xs active:scale-95 transition-all"
                   >
                     <Phone size={18} className="text-blue-600" />
                     <span>Qo'ng'iroq</span>
@@ -279,7 +279,7 @@ export default function Clinics() {
                     href={selectedClinic.location_url || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-3 bg-slate-50 h-14 rounded-2xl border border-slate-100 text-slate-900 font-bold text-xs active:scale-95 transition-all"
+                    className="flex items-center justify-center gap-3 bg-slate-50 h-14 rounded-2xl border border-slate-100 text-slate-900 font-semibold text-xs active:scale-95 transition-all"
                   >
                     <Globe size={18} className="text-blue-600" />
                     <span>Xaritada ko'rish</span>
@@ -289,10 +289,10 @@ export default function Clinics() {
 
               {/* Services */}
               <div className="space-y-4">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-2">Xizmatlar</h3>
+                <h3 className="text-sm font-medium text-slate-400 uppercase tracking-widest ml-2">Xizmatlar</h3>
                 <div className="flex flex-wrap gap-2">
                   {selectedClinic.services?.map((service, idx) => (
-                    <span key={idx} className="px-4 py-2 bg-white border border-slate-100 rounded-xl text-xs font-bold text-slate-700 shadow-sm">
+                    <span key={idx} className="px-4 py-2 bg-white border border-slate-100 rounded-xl text-xs font-semibold text-slate-700 shadow-sm">
                       {service}
                     </span>
                   ))}
@@ -301,7 +301,7 @@ export default function Clinics() {
 
               {/* Doctors */}
               <div className="space-y-4">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-2">Shifokorlar</h3>
+                <h3 className="text-sm font-medium text-slate-400 uppercase tracking-widest ml-2">Shifokorlar</h3>
                 <div className="space-y-4">
                   {selectedClinic.doctors && selectedClinic.doctors.map((doctor) => (
                     <div key={doctor.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 flex flex-col gap-4 group hover:border-emerald-100 transition-all">
@@ -315,13 +315,13 @@ export default function Clinics() {
                             )}
                           </div>
                           <div className="space-y-0.5">
-                            <p className="font-bold text-slate-900 text-sm tracking-tight">{doctor.name}</p>
+                            <p className="font-semibold text-slate-900 text-sm tracking-tight">{doctor.name}</p>
                             <div className="flex items-center gap-2">
                               <Stethoscope size={12} className="text-emerald-600" />
-                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{doctor.specialty}</span>
+                              <span className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">{doctor.specialty}</span>
                             </div>
                             {doctor.experience && (
-                              <span className="text-[8px] font-bold text-blue-500 uppercase tracking-widest block">Tajriba: {doctor.experience}</span>
+                              <span className="text-[8px] font-medium text-blue-500 uppercase tracking-widest block">Tajriba: {doctor.experience}</span>
                             )}
                           </div>
                         </div>
@@ -334,7 +334,7 @@ export default function Clinics() {
                       </div>
                       
                       {doctor.bio && (
-                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed px-1">
+                        <p className="text-[11px] text-slate-500 font-normal leading-relaxed px-1">
                           {doctor.bio}
                         </p>
                       )}
@@ -342,7 +342,7 @@ export default function Clinics() {
                       {doctor.availability && doctor.availability.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 px-1">
                           {doctor.availability.map((time, tIdx) => (
-                            <span key={tIdx} className="px-2 py-1 bg-slate-50 text-slate-500 text-[9px] font-bold rounded-md">
+                            <span key={tIdx} className="px-2 py-1 bg-slate-50 text-slate-500 text-[9px] font-semibold rounded-md">
                               {time}
                             </span>
                           ))}

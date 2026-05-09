@@ -406,7 +406,7 @@ export default function Home() {
                     n.isRead ? "bg-slate-50 border-slate-100" : "bg-blue-50 border-blue-100"
                   )}>
                     <div className="flex justify-between items-start mb-1">
-                      <h4 className="font-bold text-slate-900 text-sm">{n.title}</h4>
+                      <h4 className="font-semibold text-slate-900 text-sm">{n.title}</h4>
                       {!n.isRead && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
                     </div>
                     <p className="text-xs text-slate-600 leading-relaxed">{n.message}</p>
@@ -417,7 +417,7 @@ export default function Home() {
                       {!n.isRead && n.title === 'Dori ichish vaqti!' && (
                         <button 
                           onClick={() => markAsTaken(n)}
-                          className="px-3 py-1 bg-blue-600 text-white text-[10px] font-bold rounded-lg shadow-md shadow-blue-100 active:scale-95 transition-all"
+                          className="px-3 py-1 bg-blue-600 text-white text-[10px] font-semibold rounded-lg shadow-md shadow-blue-100 active:scale-95 transition-all"
                         >
                           DORI ICHILDI
                         </button>
@@ -481,8 +481,8 @@ export default function Home() {
               { label: 'Tamaddi (Snek)', value: mealPlan.snack, color: 'bg-purple-50 text-purple-700 border-purple-100' }
             ].map((meal, idx) => (
               <div key={idx} className={cn("p-4 rounded-2xl border space-y-1", meal.color)}>
-                <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">{meal.label}</p>
-                <p className="text-sm font-bold leading-tight">{meal.value}</p>
+                <p className="text-[10px] font-medium uppercase tracking-widest opacity-70">{meal.label}</p>
+                <p className="text-sm font-normal leading-tight">{meal.value}</p>
               </div>
             ))}
           </div>
@@ -492,58 +492,59 @@ export default function Home() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Vazn (kg)</label>
+                <label className="text-[9px] font-medium text-slate-400 uppercase tracking-widest ml-1">Vazn (kg)</label>
                 <input 
                   type="number" 
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
                   placeholder="70"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Bo'y (cm)</label>
+                <label className="text-[9px] font-medium text-slate-400 uppercase tracking-widest ml-1">Bo'y (cm)</label>
                 <input 
                   type="number" 
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
                   placeholder="175"
                 />
               </div>
             </div>
-            {calculateBMI() && (
-              <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 text-center">
-                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Sizning BMI ko'rsatkichingiz</p>
-                <p className="text-3xl font-black text-blue-700">{calculateBMI()}</p>
-                <p className="text-[11px] font-bold text-blue-500 uppercase tracking-wider mt-1">
-                  Holat: {getBMIStatus(parseFloat(calculateBMI() || '0'))}
-                </p>
+            
+            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+              <div className="flex justify-between items-center">
+                <p className="text-[10px] font-medium text-blue-600 uppercase tracking-widest mb-1">Sizning BMI ko'rsatkichingiz</p>
+                <span className="text-xl font-semibold text-blue-700">{calculateBMI() || '0.0'}</span>
               </div>
-            )}
+              <p className="text-[11px] font-medium text-blue-500 uppercase tracking-wider mt-1">
+                Holat: <span className="font-semibold">{calculateBMI() ? getBMIStatus(parseFloat(calculateBMI()!)) : '...'}</span>
+              </p>
+            </div>
           </div>
         )}
 
         {modalType === 'health' && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Qon bosimi</label>
+              <label className="text-[9px] font-medium text-slate-400 uppercase tracking-widest ml-1">Qon bosimi</label>
               <input 
                 type="text" 
+                placeholder="120/80"
                 value={healthInput.bp}
                 onChange={(e) => setHealthInput(prev => ({ ...prev, bp: e.target.value }))}
-                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
-                placeholder="120/80"
+                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Puls</label>
+              <label className="text-[9px] font-medium text-slate-400 uppercase tracking-widest ml-1">Puls</label>
               <input 
-                type="text" 
+                type="number" 
+                placeholder="75"
                 value={healthInput.pulse}
                 onChange={(e) => setHealthInput(prev => ({ ...prev, pulse: e.target.value }))}
-                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
-                placeholder="75"
+                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
               />
             </div>
           </div>
@@ -553,10 +554,10 @@ export default function Home() {
       {/* Header */}
       <div className="flex items-center justify-between px-1 mb-2">
         <div className="pt-4">
-          <p className="text-[#2563EB] font-black text-[11px] uppercase tracking-[0.25em] leading-none mb-3">
+          <p className="text-[#2563EB] font-medium text-[11px] uppercase tracking-[0.25em] leading-none mb-3">
             {greeting}
           </p>
-          <h1 className="text-5xl font-black text-[#0F172A] tracking-tighter leading-none">
+          <h1 className="text-5xl font-semibold text-[#0F172A] tracking-tighter leading-none">
             {firstName}
           </h1>
         </div>
@@ -583,8 +584,8 @@ export default function Home() {
               <stat.icon size={24} />
             </div>
             <div className="space-y-1">
-              <p className="text-[20px] font-black text-slate-900 leading-none">{stat.value}</p>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+              <p className="text-[20px] font-semibold text-slate-900 leading-none">{stat.value}</p>
+              <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">{stat.label}</p>
             </div>
           </button>
         ))}
@@ -603,15 +604,15 @@ export default function Home() {
               <Sparkles className="text-white" size={28} />
             </div>
             <div>
-              <h3 className="text-3xl font-black tracking-tighter uppercase leading-none">AI DIAGNOSTIKA</h3>
-              <p className="text-blue-100/80 text-[10px] font-black uppercase tracking-[0.2em] mt-1.5">Sog'lig'ingizni tekshiring</p>
+              <h3 className="text-3xl font-semibold tracking-tighter uppercase leading-none">AI DIAGNOSTIKA</h3>
+              <p className="text-blue-100/80 text-[10px] font-medium uppercase tracking-[0.2em] mt-1.5">Sog'lig'ingizni tekshiring</p>
             </div>
           </div>
-          <p className="text-blue-50 text-base font-bold leading-tight opacity-90 max-w-[260px]">
+          <p className="text-blue-50 text-base font-normal leading-tight opacity-90 max-w-[260px]">
             Simptomlaringizni yozing va AI yordamida tezkor tavsiyalarni oling
           </p>
           <div className="pt-2">
-            <span className="inline-flex items-center gap-2.5 px-6 py-3 bg-white text-[#2563EB] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl group-hover:gap-4 transition-all">
+            <span className="inline-flex items-center gap-2.5 px-6 py-3 bg-white text-[#2563EB] rounded-xl text-[10px] font-semibold uppercase tracking-widest shadow-xl group-hover:gap-4 transition-all">
               Boshlash <ChevronRight size={14} strokeWidth={3} />
             </span>
           </div>
@@ -621,10 +622,10 @@ export default function Home() {
       {/* Upcoming Reminders */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-2">
-          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">ESLATMA</h3>
+          <h3 className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">ESLATMA</h3>
           <button 
             onClick={() => handleNavigate('/reminders')} 
-            className="text-[9px] font-bold text-blue-600 uppercase tracking-widest"
+            className="text-[9px] font-semibold text-blue-600 uppercase tracking-widest"
           >
             Hammasi
           </button>
@@ -639,8 +640,8 @@ export default function Home() {
                 <Pill size={22} />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-[15px] font-bold text-slate-900 uppercase truncate">{nextReminder.title}</h4>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Bugun • {nextReminder.time}</p>
+                <h4 className="text-[15px] font-semibold text-slate-900 uppercase truncate">{nextReminder.title}</h4>
+                <p className="text-[10px] font-normal text-slate-400 uppercase tracking-widest mt-1">Bugun • {nextReminder.time}</p>
               </div>
               <div className="w-8 h-8 rounded-full border border-slate-100 flex items-center justify-center text-slate-200 group-hover:border-blue-600 group-hover:text-blue-600 transition-all">
                 <ChevronRight size={16} />
@@ -651,8 +652,8 @@ export default function Home() {
               onClick={() => handleNavigate('/reminders')}
               className="p-8 text-center space-y-2 cursor-pointer hover:bg-slate-50 transition-colors"
             >
-              <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Hozircha eslatmalar yo'q</p>
-              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">+ Yangi qo'shish</p>
+              <p className="text-[9px] font-medium text-slate-300 uppercase tracking-widest">Hozircha eslatmalar yo'q</p>
+              <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-widest">+ Yangi qo'shish</p>
             </div>
           )}
         </div>
@@ -668,9 +669,9 @@ export default function Home() {
             <div className="w-9 h-9 bg-emerald-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
               <Search size={18} />
             </div>
-            <h3 className="text-[10px] font-bold text-emerald-700 uppercase tracking-[0.2em]">KUN MASLAHATI</h3>
+            <h3 className="text-[10px] font-medium text-emerald-700 uppercase tracking-[0.2em]">KUN MASLAHATI</h3>
           </div>
-          <p className="text-slate-800 font-semibold leading-relaxed text-[14px] italic">
+          <p className="text-slate-800 font-normal leading-relaxed text-[14px] italic">
             "{getDailyTip()}"
           </p>
         </div>

@@ -302,8 +302,8 @@ export default function Admin() {
           <ChevronLeft size={24} strokeWidth={2.5} />
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight">ADMIN PANEL</h1>
-          <p className="text-[#2563EB] font-bold text-[10px] mt-1 uppercase tracking-widest">LOKAL BOSHQARUV</p>
+          <h1 className="text-3xl font-semibold text-[#0F172A] tracking-tight">ADMIN PANEL</h1>
+          <p className="text-[#2563EB] font-medium text-[10px] mt-1 uppercase tracking-widest">LOKAL BOSHQARUV</p>
         </div>
       </div>
 
@@ -319,7 +319,7 @@ export default function Admin() {
             key={tab.id}
             onClick={() => handleTabChange(tab.id as any)}
             className={cn(
-              "flex items-center gap-2 px-5 py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+              "flex items-center gap-2 px-5 py-2.5 rounded-xl text-[9px] font-semibold uppercase tracking-widest transition-all whitespace-nowrap",
               activeTab === tab.id ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "text-slate-400 hover:bg-slate-50"
             )}
           >
@@ -340,25 +340,25 @@ export default function Admin() {
           >
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-1.5">
-                <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">Jami Userlar</p>
-                <p className="text-2xl font-bold text-slate-900 tracking-tight">{users.length}</p>
+                <p className="text-slate-400 text-[9px] font-medium uppercase tracking-widest">Jami Userlar</p>
+                <p className="text-2xl font-semibold text-slate-900 tracking-tight">{users.length}</p>
               </div>
               <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-1.5">
-                <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">Jami Klinikalar</p>
-                <p className="text-2xl font-bold text-slate-900 tracking-tight">{clinics.length}</p>
+                <p className="text-slate-400 text-[9px] font-medium uppercase tracking-widest">Jami Klinikalar</p>
+                <p className="text-2xl font-semibold text-slate-900 tracking-tight">{clinics.length}</p>
               </div>
               <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-1.5">
-                <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">Bloklanganlar</p>
-                <p className="text-2xl font-bold text-rose-600 tracking-tight">{users.filter(u => u.isBlocked).length}</p>
+                <p className="text-slate-400 text-[9px] font-medium uppercase tracking-widest">Bloklanganlar</p>
+                <p className="text-2xl font-semibold text-rose-600 tracking-tight">{users.filter(u => u.isBlocked).length}</p>
               </div>
             </div>
 
             <div className="bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-slate-900 tracking-tight uppercase">Haftalik faollik</h3>
+                <h3 className="text-lg font-semibold text-slate-900 tracking-tight uppercase">Haftalik faollik</h3>
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 bg-blue-600 rounded-full" />
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">So'rovlar</span>
+                  <span className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">So'rovlar</span>
                 </div>
               </div>
               <div className="h-64 w-full">
@@ -371,8 +371,8 @@ export default function Admin() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 700 }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 700 }} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 600 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 600 }} />
                     <Tooltip 
                       contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 15px 20px -5px rgb(0 0 0 / 0.1)', padding: '12px' }}
                     />
@@ -394,7 +394,7 @@ export default function Admin() {
           >
             {users.length === 0 ? (
                 <div className="bg-white p-12 rounded-[2.5rem] border border-slate-100 text-center space-y-4">
-                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Userlar topilmadi</p>
+                  <p className="text-slate-400 text-[10px] font-medium uppercase tracking-[0.2em]">Userlar topilmadi</p>
                 </div>
             ) : (
                 users.map((user) => (
@@ -404,10 +404,10 @@ export default function Admin() {
                           {user.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full object-cover" /> : <Users size={20} className="text-slate-300" />}
                         </div>
                         <div className="space-y-0.5">
-                          <p className="font-bold text-slate-900 text-sm tracking-tight">{user.displayName}</p>
+                          <p className="font-semibold text-slate-900 text-sm tracking-tight">{user.displayName}</p>
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{user.role}</span>
-                            <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">ID: {user.telegramId}</span>
+                            <span className="text-[8px] font-semibold text-slate-400 uppercase tracking-widest">{user.role}</span>
+                            <span className="text-[8px] font-semibold text-slate-300 uppercase tracking-widest">ID: {user.telegramId}</span>
                           </div>
                         </div>
                       </div>
@@ -439,7 +439,7 @@ export default function Admin() {
           >
             {/* Add Clinic Form */}
             <div className="bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-5">
-              <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight">Yangi klinika qo'shish</h3>
+              <h3 className="text-lg font-semibold text-slate-900 uppercase tracking-tight">Yangi klinika qo'shish</h3>
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-4">
                   <div className="flex gap-4">
@@ -497,50 +497,48 @@ export default function Admin() {
                 </div>
                 <button 
                   onClick={addClinic}
-                  className="w-full h-12 bg-blue-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2"
+                  className="w-full h-12 bg-blue-600 text-white rounded-xl font-semibold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2"
                 >
                   <Plus size={18} />
-                  Klinikani saqlash
+                  <span>Klinikani saqlash</span>
                 </button>
               </div>
-            </div>
 
-            {/* Clinics and Doctors List */}
-            <div className="space-y-6">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-2">Mavjud klinikalar va shifokorlar</h3>
-              {clinics.map((clinic) => (
-                <div key={clinic.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-                  <div className="p-6 border-b border-slate-50">
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-4">
-                        <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center overflow-hidden border border-slate-100">
-                          {clinic.photo_url ? (
-                            <img src={clinic.photo_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <MapPin size={24} className="text-blue-600" />
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="font-bold text-slate-900 text-lg leading-tight">{clinic.name}</h4>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{clinic.address}</p>
-                          <div className="flex gap-2 pt-1">
-                            {clinic.services?.slice(0, 3).map((s, i) => (
-                              <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-bold rounded-md uppercase">
-                                {s}
-                              </span>
-                            ))}
-                          </div>
+              <h3 className="text-sm font-medium text-slate-400 uppercase tracking-widest ml-2">Mavjud klinikalar va shifokorlar</h3>
+              
+              <div className="space-y-6">
+                {clinics.map((clinic) => (
+                  <div key={clinic.id} className="bg-slate-50/50 rounded-[2.5rem] border border-slate-100 p-6 space-y-6">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <h4 className="font-semibold text-slate-900 text-lg leading-tight">{clinic.name}</h4>
+                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">{clinic.address}</p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {clinic.services?.map((s, i) => (
+                            <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-semibold rounded-md uppercase">
+                              {s}
+                            </span>
+                          ))}
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <button 
+                        onClick={() => deleteClinic(clinic.id)}
+                        className="w-10 h-10 bg-white text-slate-300 hover:text-rose-500 rounded-xl flex items-center justify-center transition-all border border-slate-100 shadow-sm"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                         <button 
                           onClick={() => setSelectedClinicId(selectedClinicId === clinic.id ? null : clinic.id)}
                           className={cn(
-                            "px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all",
-                            selectedClinicId === clinic.id ? "bg-slate-900 text-white" : "bg-slate-50 text-slate-600"
+                            "px-4 py-2 rounded-xl text-[9px] font-semibold uppercase tracking-widest transition-all",
+                            selectedClinicId === clinic.id ? "bg-slate-900 text-white" : "bg-white text-slate-400 border border-slate-100"
                           )}
                         >
-                          {selectedClinicId === clinic.id ? 'Yopish' : '+ Shifokor'}
+                          {selectedClinicId === clinic.id ? 'Yopish' : 'Shifokor qo\\'shish'}
                         </button>
                         <button 
                           onClick={() => deleteClinic(clinic.id)}
@@ -561,7 +559,7 @@ export default function Admin() {
                         exit={{ height: 0, opacity: 0 }}
                         className="bg-slate-50/50 p-6 border-b border-slate-100 overflow-hidden"
                       >
-                        <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Shifokor qo'shish: {clinic.name}</h5>
+                        <h5 className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] mb-4">Shifokor qo'shish: {clinic.name}</h5>
                         <div className="grid grid-cols-2 gap-4">
                           <input
                             placeholder="Shifokor ismi"
@@ -614,49 +612,47 @@ export default function Admin() {
                         </div>
                         <button 
                           onClick={addDoctor}
-                          className="mt-4 w-full h-11 bg-slate-900 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all"
+                          className="mt-4 w-full h-11 bg-slate-900 text-white rounded-xl font-semibold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all"
                         >
                           <Plus size={16} />
-                          Shifokorni saqlash
+                          <span>Shifokorni saqlash</span>
                         </button>
                       </motion.div>
                     )}
                   </AnimatePresence>
 
-                  {/* Doctors List */}
-                  <div className="p-6 space-y-4">
-                    <h5 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Klinika shifokorlari ({clinic.doctors?.length || 0})</h5>
-                    {clinic.doctors && clinic.doctors.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-3">
-                        {clinic.doctors.map((doctor) => (
-                          <div key={doctor.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100 group">
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-slate-100">
-                                {doctor.photo_url ? (
-                                  <img src={doctor.photo_url} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                  <Stethoscope size={20} className="text-slate-300" />
-                                )}
-                              </div>
-                              <div>
-                                <p className="font-bold text-slate-900 text-sm leading-none mb-1">{doctor.name}</p>
-                                <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest">{doctor.specialty}</p>
-                              </div>
+                  <div className="space-y-3 pt-2">
+                    <h5 className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Klinika shifokorlari ({clinic.doctors?.length || 0})</h5>
+                    <div className="grid grid-cols-1 gap-2">
+                      {clinic.doctors?.map((doctor) => (
+                        <div key={doctor.id} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center justify-between group/doc transition-all">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center overflow-hidden border border-slate-100">
+                              {doctor.photo_url ? (
+                                <img src={doctor.photo_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <Stethoscope size={18} className="text-slate-300" />
+                              )}
                             </div>
-                            <button 
-                              onClick={() => deleteDoctor(doctor.id, clinic.id)}
-                              className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            <div>
+                              <p className="font-semibold text-slate-900 text-sm leading-none mb-1">{doctor.name}</p>
+                              <p className="text-[9px] font-medium text-blue-600 uppercase tracking-widest">{doctor.specialty}</p>
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest text-center py-4 italic">
-                        Shifokorlar qo'shilmagan
-                      </p>
-                    )}
+                          <button 
+                            onClick={() => deleteDoctor(doctor.id, clinic.id)}
+                            className="w-8 h-8 text-slate-200 hover:text-rose-500 transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                      {(!clinic.doctors || clinic.doctors.length === 0) && (
+                        <p className="text-[10px] text-slate-300 font-medium uppercase tracking-widest text-center py-4 italic">
+                          Shifokorlar hali qo'shilmagan
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -670,64 +666,68 @@ export default function Admin() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="bg-white p-7 rounded-[2.5rem] border border-slate-100 space-y-7 shadow-sm"
+            className="space-y-6"
           >
-            <div className="space-y-2.5">
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-2">E'lon (Broadcast)</label>
-              <input
-                type="text"
-                value={settings?.broadcast || ''}
-                onChange={(e) => setSettings({ ...settings!, broadcast: e.target.value })}
-                placeholder="Yangi e'lon matni..."
-                className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-medium text-slate-900"
-              />
-            </div>
-            <div className="space-y-2.5">
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-2">AI System Prompt</label>
-              <textarea
-                value={settings?.aiSystemPrompt || ''}
-                onChange={(e) => setSettings({ ...settings!, aiSystemPrompt: e.target.value })}
-                className="w-full h-48 p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-xs font-medium leading-relaxed outline-none"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-5">
-              <div className="space-y-2.5">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-2">Basic Limit</label>
-                <input
-                  type="number"
-                  value={settings?.basicLimit || 0}
-                  onChange={(e) => setSettings({ ...settings!, basicLimit: parseInt(e.target.value) })}
-                  className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-bold text-slate-900"
+            <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm space-y-6">
+              <div className="space-y-3">
+                <label className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.2em] ml-2">E'lon (Broadcast)</label>
+                <div className="relative">
+                  <textarea 
+                    placeholder="Barcha userlarga xabar yuborish..."
+                    className="w-full h-32 p-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-medium text-sm leading-relaxed"
+                  />
+                  <button className="absolute bottom-4 right-4 w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 active:scale-90 transition-all">
+                    <Send size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.2em] ml-2">AI System Prompt</label>
+                <textarea 
+                  value={settings.aiSystemPrompt}
+                  onChange={(e) => setSettings({ ...settings, aiSystemPrompt: e.target.value })}
+                  className="w-full h-40 p-5 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-medium text-sm leading-relaxed"
                 />
               </div>
-              <div className="space-y-2.5">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-2">Pro Limit</label>
-                <input
-                  type="number"
-                  value={settings?.proLimit || 0}
-                  onChange={(e) => setSettings({ ...settings!, proLimit: parseInt(e.target.value) })}
-                  className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-bold text-slate-900"
-                />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <label className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.2em] ml-2">Basic Limit</label>
+                  <input 
+                    type="number"
+                    value={settings.basicLimit}
+                    onChange={(e) => setSettings({ ...settings, basicLimit: parseInt(e.target.value) })}
+                    className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-medium text-slate-900"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.2em] ml-2">Pro Limit</label>
+                  <input 
+                    type="number"
+                    value={settings.proLimit}
+                    onChange={(e) => setSettings({ ...settings, proLimit: parseInt(e.target.value) })}
+                    className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-medium text-slate-900"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-6 pt-6 border-t border-slate-100">
-              <button 
-                onClick={saveSettings}
-                className="w-full h-14 bg-blue-600 text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-blue-200 active:scale-95 transition-all"
-              >
-                <Save size={20} />
-                Sozlamalarni saqlash
-              </button>
+              <div className="pt-4 space-y-4">
+                <button 
+                  onClick={saveSettings}
+                  className="w-full h-14 bg-blue-600 text-white rounded-2xl font-semibold text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-blue-200 active:scale-95 transition-all"
+                >
+                  <Save size={20} />
+                  <span>Sozlamalarni saqlash</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={handleClearAllLocalData}
-                className="w-full h-14 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all"
-              >
-                <Trash2 size={20} />
-                Barcha lokal ma&apos;lumotlarni tozalash
-              </button>
+                <button 
+                  onClick={handleClearAllLocalData}
+                  className="w-full h-14 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl font-semibold text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all"
+                >
+                  <Trash2 size={20} />
+                  <span>Barcha ma'lumotlarni o'chirish</span>
+                </button>
               <p className="text-[10px] text-slate-400 font-medium text-center px-2">
                 Supabase dagi ma&apos;lumotlar o&apos;chmaydi — faqat ushbu qurilmadagi brauzer xotirasi.
               </p>

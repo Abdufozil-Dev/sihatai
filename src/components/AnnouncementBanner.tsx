@@ -46,8 +46,8 @@ export default function AnnouncementBanner() {
             <Megaphone size={20} className="text-white" />
           </div>
           <div className="flex-1">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 mb-0.5">E'lon</p>
-            <p className="text-xs font-bold leading-relaxed">{announcement}</p>
+            <p className="text-[10px] font-medium uppercase tracking-[0.2em] opacity-80 mb-0.5">E'lon</p>
+            <p className="text-xs font-semibold leading-relaxed">{announcement}</p>
           </div>
           <button 
             onClick={() => setIsVisible(false)}

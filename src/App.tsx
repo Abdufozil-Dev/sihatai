@@ -125,62 +125,64 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const showNav = location.pathname !== '/register';
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans pt-[env(safe-area-inset-top,44px)] pb-[env(safe-area-inset-bottom,20px)]">
-      <ReminderChecker />
-      {/* Main Content */}
-      <main className={cn("flex-1 max-w-md mx-auto w-full px-4 pt-8", showNav ? "pb-40" : "pb-12")}>
-        {children}
-      </main>
+    <div className="min-h-screen bg-white flex justify-center items-start overflow-x-hidden font-sans">
+      <div className="w-full max-w-[430px] min-h-screen bg-[#F8FAFC] flex flex-col relative shadow-2xl shadow-slate-200">
+        <ReminderChecker />
+        {/* Main Content */}
+        <main className={cn("flex-1 w-full px-4 pt-8", showNav ? "pb-40" : "pb-12")}>
+          {children}
+        </main>
 
-      {/* Bottom Nav */}
-      {showNav && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-2xl border-t border-slate-100 z-50 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-          <div className="max-w-md mx-auto px-6 h-24 flex items-center justify-between relative">
-            {navItems.map((item) => (
-              item.isCenter ? (
-                <div key={item.path} className="relative -top-6 flex flex-col items-center">
-                  <Link
-                    to={item.path}
-                    onClick={handleNavClick}
-                    className={cn(
-                      "w-16 h-16 rounded-full flex items-center justify-center shadow-xl transition-all border-4 border-white group",
-                      location.pathname === item.path 
-                        ? "bg-blue-600 text-white scale-105 shadow-blue-200" 
-                        : "bg-blue-500 text-white hover:scale-105 shadow-blue-100"
-                    )}
-                  >
-                    <item.icon size={28} className="group-active:scale-90 transition-transform" />
-                  </Link>
-                  <span className={cn(
-                    "text-[8px] font-black mt-2 text-center w-20 leading-tight uppercase tracking-wider",
-                    location.pathname === item.path ? "text-blue-600" : "text-slate-400"
-                  )}>
-                    {item.label}
-                  </span>
-                </div>
-              ) : (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={handleNavClick}
-                    className={cn(
-                      "flex flex-col items-center gap-2 transition-all flex-1 py-3 rounded-2xl group",
-                      location.pathname === item.path ? "text-blue-600" : "text-slate-400 hover:text-slate-600"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center transition-all group-active:scale-90",
-                      location.pathname === item.path ? "bg-blue-50" : "bg-transparent"
+        {/* Bottom Nav */}
+        {showNav && (
+          <nav className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-2xl border-t border-slate-100 z-50 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+            <div className="px-6 h-24 flex items-center justify-between relative">
+              {navItems.map((item) => (
+                item.isCenter ? (
+                  <div key={item.path} className="relative -top-6 flex flex-col items-center">
+                    <Link
+                      to={item.path}
+                      onClick={handleNavClick}
+                      className={cn(
+                        "w-16 h-16 rounded-full flex items-center justify-center shadow-xl transition-all border-4 border-white group",
+                        location.pathname === item.path 
+                          ? "bg-blue-600 text-white scale-105 shadow-blue-200" 
+                          : "bg-blue-500 text-white hover:scale-105 shadow-blue-100"
+                      )}
+                    >
+                      <item.icon size={28} className="group-active:scale-90 transition-transform" />
+                    </Link>
+                    <span className={cn(
+                      "text-[8px] font-semibold mt-2 text-center w-20 leading-tight uppercase tracking-wider",
+                      location.pathname === item.path ? "text-blue-600" : "text-slate-400"
                     )}>
-                      <item.icon size={22} strokeWidth={location.pathname === item.path ? 3 : 2} />
-                    </div>
-                    <span className="text-[9px] font-black uppercase tracking-widest">{item.label}</span>
-                  </Link>
-              )
-            ))}
-          </div>
-        </nav>
-      )}
+                      {item.label}
+                    </span>
+                  </div>
+                ) : (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={handleNavClick}
+                      className={cn(
+                        "flex flex-col items-center gap-2 transition-all flex-1 py-3 rounded-2xl group",
+                        location.pathname === item.path ? "text-blue-600" : "text-slate-400 hover:text-slate-600"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center transition-all group-active:scale-90",
+                        location.pathname === item.path ? "bg-blue-50" : "bg-transparent"
+                      )}>
+                        <item.icon size={22} strokeWidth={location.pathname === item.path ? 2.5 : 2} />
+                      </div>
+                      <span className="text-[9px] font-semibold uppercase tracking-widest">{item.label}</span>
+                    </Link>
+                )
+              ))}
+            </div>
+          </nav>
+        )}
+      </div>
     </div>
   );
 };
@@ -207,13 +209,13 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
           <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mb-6">
             <Ban size={40} />
           </div>
-          <h1 className="text-xl font-bold text-slate-900 mb-2 uppercase">Xatolik yuz berdi</h1>
-          <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto">
+          <h1 className="text-xl font-semibold text-slate-900 mb-2 uppercase">Xatolik yuz berdi</h1>
+          <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto font-normal">
             Ilova ishida kutilmagan xatolik yuz berdi. Iltimos, sahifani yangilang.
           </p>
           <button 
             onClick={() => window.location.reload()}
-            className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs tracking-widest uppercase shadow-lg shadow-blue-100"
+            className="px-8 py-3 bg-blue-600 text-white rounded-xl font-semibold text-xs tracking-widest uppercase shadow-lg shadow-blue-100"
           >
             Yangilash
           </button>
@@ -352,13 +354,13 @@ export default function App() {
         <div className="w-24 h-24 bg-rose-50 text-rose-600 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-xl shadow-rose-100">
           <Ban size={48} />
         </div>
-        <h1 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tight">KIRISH TAQIQLANGAN</h1>
-        <p className="text-slate-500 font-medium leading-relaxed mb-8">
+        <h1 className="text-2xl font-semibold text-slate-900 mb-4 uppercase tracking-tight">KIRISH TAQIQLANGAN</h1>
+        <p className="text-slate-500 font-normal leading-relaxed mb-8">
           Sizning hisobingiz administrator tomonidan bloklangan. Iltimos, qo'llab-quvvatlash xizmati bilan bog'laning.
         </p>
         <button 
           onClick={() => window.location.reload()}
-          className="w-full h-14 bg-slate-900 text-white rounded-2xl font-bold text-sm tracking-widest uppercase"
+          className="w-full h-14 bg-slate-900 text-white rounded-2xl font-semibold text-sm tracking-widest uppercase"
         >
           QAYTA URINISH
         </button>
