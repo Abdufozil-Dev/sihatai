@@ -6,10 +6,6 @@ import { cn } from '../lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../context/AuthContext';
 import { GoogleGenAI } from '@google/genai';
-import { reminderService } from '../services/reminderService';
-import { notificationService } from '../services/notificationService';
-import { chatService } from '../services/chatService';
-import { activityService } from '../services/activityService';
 
 import { Clinic, Reminder, Settings } from '../types';
 
@@ -19,7 +15,7 @@ interface Expert {
   title: string;
   description: string;
   icon: string;
-  color: string; 
+  color: string;
   bgColor: string;
   systemPrompt: string;
   welcomeMessage: string;
@@ -34,19 +30,7 @@ const EXPERTS: Expert[] = [
     icon: '🩺',
     color: 'text-white',
     bgColor: 'bg-blue-600',
-    systemPrompt: `Siz Sihat Diagnost - professional tibbiy diagnostika bo'yicha AI ekspertsiz.
-    
-    Qoidalaringiz:
-    1. FAQAT tibbiyot va salomatlikka oid savollarga javob bering. Boshqa har qanday mavzudagi savollarga (siyosat, sport, texnika va h.k.) qat'iy ravishda: "Men faqat tibbiyotga oid savollarga javob beraman" deb javob bering.
-    2. Foydalanuvchi simptomlarini (masalan: bosh og'rig'i, isitma) yozsa, avval unga maslahatlar bering (nima qilish kerakligi, qanday choralarni ko'rish haqida).
-    3. Maslahatlardan so'ng, quyidagi shifokorlardan aynan shu simptomga mos keladiganini tavsiya qiling va uning ish vaqtlarini ayting:
-       - Dr. Aliyev (Nevrolog) - Bosh og'rig'i, asab tizimi: Dushanba-Seshanba, 12:00-14:00.
-       - Dr. Karimov (Kardiolog) - Yurak, qon bosimi: Chorshanba-Payshanba, 09:00-13:00.
-       - Dr. Ahmedova (Pediatr) - Bolalar salomatligi: Har kuni, 10:00-16:00.
-       - Dr. Tursunov (Dermatolog) - Teri muammolari: Juma-Shanba, 09:00-14:00.
-    4. Tavsiyadan so'ng: "Agar xohlasangiz, sizni ushbu shifokor qabuliga bron qilib qo'yishim mumkin. Qaysi vaqt sizga qulay?" deb so'rang.
-    5. Foydalanuvchi vaqtni aytsa (masalan: "soat 14:00 ga"), uni tasdiqlang va tizimda bron qilishini yakunlang.
-    6. Har doim professional, xushmuomala va aniq bo'ling. Har qanday holatda ham jiddiy muammolarda shifokorga ko'rinish shartligini eslatib o'ting.`,
+    systemPrompt: 'Siz Sihat Diagnost - professional tibbiy diagnostika bo\'yicha AI ekspertsiz. Foydalanuvchi simptomlarini tahlil qiling va ehtimoliy sabablarni ayting. Har doim shifokorga murojaat qilishni tavsiya eting.',
     welcomeMessage: 'Assalomu alaykum! Men Sihat Diagnostman. Sizni nima bezovta qilyapti? Simptomlaringizni yozing, men ularni tahlil qilishga yordam beraman.'
   },
   {
@@ -57,7 +41,7 @@ const EXPERTS: Expert[] = [
     icon: '🧠',
     color: 'text-white',
     bgColor: 'bg-slate-800',
-    systemPrompt: 'Siz Sihat Psixolog - professional psixologik yordam bo\'yicha AI ekspertsiz. FAQAT psixologiya va ruhiy salomatlikka oid savollarga javob bering. Boshqa savollarga: "Men faqat ruhiy salomatlikka oid savollarga javob beraman" deb javob bering.',
+    systemPrompt: 'Siz Sihat Psixolog - professional psixologik yordam bo\'yicha AI ekspertsiz. Foydalanuvchiga ruhiy xotirjamlik, stressni boshqarish va emotsional barqarorlik bo\'yicha yordam bering.',
     welcomeMessage: 'Assalomu alaykum! Men Sihat Psixologman. Sizni nima bezovta qilyapti yoki qanday mavzuda suhbatlashishni istaysiz?'
   },
   {
@@ -68,7 +52,7 @@ const EXPERTS: Expert[] = [
     icon: '🥗',
     color: 'text-white',
     bgColor: 'bg-emerald-600',
-    systemPrompt: 'Siz Sihat Nutrisiolog - sog\'lom ovqatlanish va metabolizm bo\'yicha AI ekspertsiz. FAQAT ovqatlanish, parhez va metabolizmga oid savollarga javob bering. Boshqa savollarga: "Men faqat ovqatlanish va ratsionga oid savollarga javob beraman" deb javob bering.',
+    systemPrompt: 'Siz Sihat Nutrisiolog - sog\'lom ovqatlanish va metabolizm bo\'yicha AI ekspertsiz. Foydalanuvchiga individual ovqatlanish rejasi va sog\'lom turmush tarzi bo\'yicha maslahatlar bering.',
     welcomeMessage: 'Assalomu alaykum! Men Sihat Nutrisiologman. Sog\'lom ovqatlanish va metabolizmni yaxshilash bo\'yicha savollaringiz bormi?'
   }
 ];
@@ -100,18 +84,8 @@ export default function Consultation() {
   const { user, setUser } = useAuth();
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const response = await fetch('/api/settings');
-        if (response.ok) {
-          const data = await response.json();
-          setSettings(data);
-        }
-      } catch (e) {
-        console.error("Fetch settings error:", e);
-      }
-    };
-    fetchSettings();
+    const savedSettings = localStorage.getItem('admin_settings');
+    if (savedSettings) setSettings(JSON.parse(savedSettings));
   }, []);
 
   useEffect(() => {
@@ -247,7 +221,7 @@ export default function Consultation() {
 
   if (selectedDoctorType) {
     return (
-      <div className="fixed inset-x-0 top-0 bottom-0 w-full max-w-[430px] mx-auto flex flex-col bg-[#F1F5F9] z-[60] overflow-hidden shadow-2xl">
+      <div className="fixed inset-0 flex flex-col max-w-md mx-auto bg-[#F1F5F9] z-[60] overflow-hidden">
         <header className="bg-white/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between border-b border-slate-200 sticky top-0 z-10 shadow-sm">
           <div className="flex items-center gap-3">
             <button 
@@ -266,10 +240,10 @@ export default function Consultation() {
                 />
               </div>
               <div className="flex flex-col">
-                <h3 className="font-semibold text-slate-900 leading-tight text-sm tracking-tight">{selectedDoctorType}</h3>
+                <h3 className="font-bold text-slate-900 leading-tight text-sm tracking-tight">{selectedDoctorType}</h3>
                 <div className="flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                  <span className="text-[8px] font-medium text-emerald-600 uppercase tracking-widest">ONLINE</span>
+                  <span className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">ONLINE</span>
                 </div>
               </div>
             </div>
@@ -282,7 +256,7 @@ export default function Consultation() {
               <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center">
                 <img src="https://emojicdn.elk.sh/💬?style=apple" className="w-10 h-10" alt="Chat" />
               </div>
-              <p className="text-sm font-normal text-slate-500 max-w-[200px]">
+              <p className="text-sm font-medium text-slate-500 max-w-[200px]">
                 Shifokorga savolingizni yozing. Mutaxassis tez orada javob beradi.
               </p>
             </div>
@@ -301,11 +275,11 @@ export default function Consultation() {
                 "p-4 rounded-[2rem] text-[15px] leading-relaxed shadow-sm relative",
                 msg.role === 'user' 
                   ? "bg-blue-600 text-white rounded-tr-none" 
-                  : "bg-white text-slate-800 border border-slate-100 rounded-tl-none font-normal"
+                  : "bg-white text-slate-800 border border-slate-100 rounded-tl-none font-medium"
               )}>
                 {msg.content}
                 <div className={cn(
-                  "text-[8px] font-medium uppercase tracking-widest mt-2",
+                  "text-[8px] font-bold uppercase tracking-widest mt-2",
                   msg.role === 'user' ? "text-blue-200" : "text-slate-400"
                 )}>
                   {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
@@ -323,7 +297,7 @@ export default function Consultation() {
               onChange={(e) => setDoctorInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendDoctorMessage()}
               placeholder="Xabar yozing..."
-              className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-normal px-4 py-2 outline-none text-slate-900 placeholder:text-slate-400"
+              className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium px-4 py-2 outline-none text-slate-900 placeholder:text-slate-400"
             />
             <button 
               onClick={toggleListening}
@@ -361,7 +335,7 @@ export default function Consultation() {
     ];
 
     return (
-      <div className="fixed inset-x-0 top-0 bottom-0 w-full max-w-[430px] mx-auto bg-slate-50 z-[60] flex flex-col p-6 overflow-y-auto shadow-2xl">
+      <div className="fixed inset-0 bg-slate-50 z-[60] flex flex-col max-w-md mx-auto p-6">
         <div className="flex items-center gap-4 mb-8">
           <button 
             onClick={() => setShowDoctorSelection(false)}
@@ -369,7 +343,7 @@ export default function Consultation() {
           >
             <ChevronLeft size={24} />
           </button>
-          <h2 className="text-xl font-semibold text-slate-900 uppercase tracking-tight">Mutaxassisni tanlang</h2>
+          <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tight">Mutaxassisni tanlang</h2>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -386,7 +360,7 @@ export default function Consultation() {
               <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-3xl">
                 {type.icon}
               </div>
-              <span className="font-semibold text-slate-700 text-sm">{type.name}</span>
+              <span className="font-bold text-slate-700 text-sm">{type.name}</span>
             </motion.button>
           ))}
         </div>
@@ -394,44 +368,16 @@ export default function Consultation() {
     );
   }
 
-  const handleSelectExpert = async (expert: Expert) => {
+  const handleSelectExpert = (expert: Expert) => {
     if (tg?.HapticFeedback) {
       tg.HapticFeedback.impactOccurred('medium');
     }
     setSelectedExpert(expert);
-    
-    // Log activity
-    if (user) {
-      activityService.logActivity({
-        userId: user.uid,
-        activityType: 'button_click',
-        details: { expertId: expert.id, action: 'select_expert' }
-      });
-    }
-
-    // Load history from DB
-    if (user) {
-      const history = await chatService.getHistory(user.uid, expert.id);
-      if (history && history.length > 0) {
-        setMessages(history.map(m => ({
-          role: m.role,
-          content: m.content,
-          timestamp: new Date(m.created_at || Date.now())
-        })));
-      } else {
-        setMessages([{
-          role: 'assistant',
-          content: expert.welcomeMessage,
-          timestamp: new Date()
-        }]);
-      }
-    } else {
-      setMessages([{
-        role: 'assistant',
-        content: expert.welcomeMessage,
-        timestamp: new Date()
-      }]);
-    }
+    setMessages([{
+      role: 'assistant',
+      content: expert.welcomeMessage,
+      timestamp: new Date()
+    }]);
   };
 
   const handleSendMessage = async () => {
@@ -440,10 +386,7 @@ export default function Consultation() {
 
     const today = new Date().toISOString().split('T')[0];
     const normalizedCount = user.lastRequestDate === today ? (user.dailyRequestCount || 0) : 0;
-    
-    // Use limit from settings or default to 50
-    const dailyLimit = settings?.proLimit || 50;
-    
+    const dailyLimit = 50;
     if (normalizedCount >= dailyLimit) {
       tg?.showAlert(`Bugungi limit tugadi (${dailyLimit} ta). Ertaga qayta urinib ko'ring.`);
       return;
@@ -460,16 +403,6 @@ export default function Consultation() {
     };
 
     setMessages(prev => [...prev, userMessage]);
-    
-    // Save user message to DB
-    chatService.saveMessage({
-      user_id: user.uid,
-      expert_id: selectedExpert.id,
-      role: 'user',
-      content: input
-    });
-
-    const currentInput = input;
     setInput('');
     setIsTyping(true);
 
@@ -479,59 +412,34 @@ export default function Consultation() {
       const ai = new GoogleGenAI({ apiKey: (process.env as any).GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: [{ role: 'user', parts: [{ text: `${fullPrompt}\n\nUser says: ${currentInput}` }] }],
+        contents: [{ role: 'user', parts: [{ text: `${fullPrompt}\n\nUser says: ${input}` }] }],
       });
       
       const aiResponseText = response.text || '';
-
-      // Save assistant message to DB
-      chatService.saveMessage({
-        user_id: user.uid,
-        expert_id: selectedExpert.id,
-        role: 'assistant',
-        content: aiResponseText
-      });
       
-      // Detect if user is confirming a time and doctor
-      const timeMatch = currentInput.match(/(\d{2}:\d{2})/);
-      const isBookingConfirmation = timeMatch && (
-        messages.some(m => m.role === 'assistant' && (m.content.toLowerCase().includes('bron') || m.content.toLowerCase().includes('qabul'))) ||
-        aiResponseText.toLowerCase().includes('tasdiq') ||
-        aiResponseText.toLowerCase().includes('muvaffaqiyatli')
-      );
-
-      if (isBookingConfirmation) {
+      // Detect if user is confirming a time
+      const timeMatch = input.match(/(\d{2}:\d{2})/);
+      if (timeMatch && messages.some(m => m.role === 'assistant' && m.content.toLowerCase().includes('bron'))) {
         const time = timeMatch[1];
+        const reminder: Reminder = {
+          id: Date.now().toString(),
+          userId: tg?.initDataUnsafe?.user?.id?.toString() || 'demo',
+          title: `Shifokor qabuli (${time})`,
+          time: time,
+          days: ['Dushanba'], // Default or derived
+          isActive: true
+        };
+        const savedReminders = JSON.parse(localStorage.getItem('reminders') || '[]');
+        localStorage.setItem('reminders', JSON.stringify([...savedReminders, reminder]));
         
-        // Save to DB via service (Truly functional)
-        try {
-          // Find doctor name in response
-          const doctorMatch = aiResponseText.match(/Dr\.?\s+\w+/);
-          const doctorName = doctorMatch ? doctorMatch[0] : "Shifokor";
-
-          await reminderService.addReminder({
-            userId: user.uid,
-            medicineName: `Qabul: ${doctorName}`,
-            dosage: "Konsultatsiya",
-            time: time,
-            days: ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Yakshanba'],
-            isActive: true
-          });
-          
-          // Send instant notification via server API
-          await fetch('/api/send-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chatId: user.uid,
-              message: `✅ *MUVAFFAQIYATLI BRON QILINDI!*\n\n👨‍⚕️ *Shifokor:* ${doctorName}\n⏰ *Vaqt:* ${time}\n\nSizga belgilangan vaqtdan 15 daqiqa oldin yana bir bor eslatma yuboramiz.`
-            })
-          });
-
-          if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        } catch (err) {
-          console.error("Booking error:", err);
-        }
+        // Simulate SMS
+        setTimeout(() => {
+          if (tg?.showConfirm) {
+            tg.showConfirm(`SMS yuborildi: Sizning qabulingiz ${time} ga muvaffaqiyatli belgilandi.`);
+          } else {
+            alert(`SMS yuborildi: Sizning qabulingiz ${time} ga muvaffaqiyatli belgilandi.`);
+          }
+        }, 1500);
       }
 
       const assistantMessage: Message = {
@@ -572,176 +480,148 @@ export default function Consultation() {
 
   if (selectedExpert) {
     return (
-      <div className="fixed inset-x-0 top-0 bottom-0 w-full max-w-[430px] mx-auto flex flex-col bg-[#F8FAFC] z-[60] overflow-hidden shadow-2xl">
-        {/* Background Decorative Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/5 blur-[120px] rounded-full" />
-          <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-600/5 blur-[120px] rounded-full" />
-        </div>
-
-        {/* Header */}
-        <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-100 px-4 py-4 pt-16 shadow-sm">
-          <div className="max-w-md mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => setSelectedExpert(null)}
-                className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all border border-slate-100"
-              >
-                <ChevronLeft size={20} strokeWidth={2.5} />
-              </button>
-              <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-blue-100/50", selectedExpert.bgColor)}>
-                  <img 
-                    src={`https://emojicdn.elk.sh/${selectedExpert.icon}?style=apple`} 
-                    alt={selectedExpert.name}
-                    className="w-6 h-6 object-contain"
-                  />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-900 leading-none mb-1">{selectedExpert.name}</h2>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-medium text-emerald-600 uppercase tracking-widest">Onlayn</span>
-                  </div>
+      <div className="fixed inset-0 flex flex-col max-w-md mx-auto bg-[#F1F5F9] z-[60] overflow-hidden">
+        {/* Chat Header */}
+        <header className="bg-white/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between border-b border-slate-200 sticky top-0 z-10 shadow-sm pt-[calc(env(safe-area-inset-top,44px)+10px)]">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setSelectedExpert(null)}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 active:scale-90 transition-all"
+            >
+              <ChevronLeft size={22} strokeWidth={2.5} />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shadow-md", selectedExpert.bgColor)}>
+                <img 
+                  src={`https://emojicdn.elk.sh/${selectedExpert.icon}?style=apple`} 
+                  alt={selectedExpert.name}
+                  className="w-6 h-6 object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <div className="flex flex-col">
+                <h3 className="font-bold text-slate-900 leading-tight text-sm tracking-tight">{selectedExpert.name}</h3>
+                <div className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">ONLAYN</span>
                 </div>
               </div>
             </div>
-            <button 
-              onClick={clearChat}
-              className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-400 active:scale-90 transition-all border border-rose-100"
-            >
-              <Trash2 size={18} />
-            </button>
           </div>
-        </div>
+          <button 
+            onClick={clearChat}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:text-rose-500 transition-all active:scale-90"
+          >
+            <Trash2 size={18} />
+          </button>
+        </header>
 
         {/* Messages Area */}
         <div 
           ref={scrollRef}
-          className="flex-1 overflow-y-auto px-4 pt-6 pb-36 space-y-6 no-scrollbar relative z-10"
+          className="flex-1 overflow-y-auto px-4 pt-4 pb-28 space-y-6 no-scrollbar"
         >
           {messages.map((msg, idx) => (
             <motion.div
               key={idx}
-              initial={{ opacity: 0, y: 15, scale: 0.95 }}
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ type: 'spring', damping: 20, stiffness: 200 }}
               className={cn(
-                "flex flex-col max-w-[85%] relative group",
+                "flex flex-col max-w-[85%] relative",
                 msg.role === 'user' ? "ml-auto items-end" : "mr-auto items-start"
               )}
             >
               <div className={cn(
-                "p-5 rounded-[2.5rem] text-[15px] leading-relaxed shadow-sm relative transition-all duration-300",
+                "p-4 rounded-[2rem] text-[15px] leading-relaxed shadow-sm relative",
                 msg.role === 'user' 
-                  ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-none shadow-blue-100/50" 
-                  : "bg-white text-slate-800 border border-slate-100 rounded-tl-none hover:shadow-md font-normal"
+                  ? "bg-blue-600 text-white rounded-tr-none" 
+                  : "bg-white text-slate-800 border border-slate-100 rounded-tl-none"
               )}>
-                <div className={cn(
-                  "prose prose-sm max-w-none",
-                  msg.role === 'user' ? "prose-invert text-white" : "prose-slate"
-                )}>
+                <div className="prose prose-sm max-w-none prose-slate">
                   <ReactMarkdown 
                     components={{
-                      p: ({node, ...props}) => <p className="mb-3 last:mb-0 leading-relaxed font-normal text-[15px]" {...props} />,
-                      ul: ({node, ...props}) => <ul className="space-y-2.5 mb-4 list-none pl-1" {...props} />,
+                      p: ({node, ...props}) => <p className="mb-3 last:mb-0 leading-relaxed font-medium" {...props} />,
+                      ul: ({node, ...props}) => <ul className="space-y-1.5 mb-4 list-none" {...props} />,
                       li: ({node, ...props}) => (
-                        <li className="flex items-start gap-3">
-                          <span className={cn(
-                            "font-semibold text-xl leading-none mt-0.5 shrink-0",
-                            msg.role === 'user' ? "text-blue-200" : "text-blue-600"
-                          )}>•</span>
-                          <span className="font-normal text-[14px] leading-tight">{props.children}</span>
+                        <li className="flex items-start gap-2 font-semibold text-slate-700">
+                          <span className="text-blue-600 font-black text-base">•</span>
+                          <span>{props.children}</span>
                         </li>
                       ),
-                      strong: ({node, ...props}) => <strong className="font-semibold text-[#0F172A]" {...props} />,
-                      em: ({node, ...props}) => <em className="italic font-medium text-slate-400 block mt-2 text-[10px] uppercase tracking-widest" {...props} />,
+                      em: ({node, ...props}) => <em className="text-slate-400 italic block mt-3 text-[10px] font-bold uppercase tracking-tight" {...props} />,
+                      strong: ({node, ...props}) => <strong className="font-black text-slate-900" {...props} />,
                     }}
                   >
                     {msg.content}
                   </ReactMarkdown>
                 </div>
                 
-                <div className={cn(
-                  "flex items-center gap-2 mt-4 pt-3 border-t",
-                  msg.role === 'user' ? "border-blue-500/30" : "border-slate-50"
-                )}>
-                  <span className={cn(
-                    "text-[8px] font-normal uppercase tracking-widest opacity-60",
-                    msg.role === 'user' ? "text-blue-100" : "text-slate-400"
-                  )}>
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                  </span>
-                  {msg.role === 'assistant' && (
-                    <div className="flex items-center gap-1.5 ml-auto">
-                      <div className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] shadow-sm", selectedExpert.bgColor)}>
-                        <span className="text-[10px]">{selectedExpert.icon}</span>
+                {msg.role === 'assistant' && (
+                  <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px]", selectedExpert.bgColor)}>
+                        {selectedExpert.icon}
                       </div>
-                      <span className="text-[9px] font-medium text-slate-400 uppercase tracking-tighter">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
                         {selectedExpert.name}
                       </span>
                     </div>
-                  )}
-                </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                        {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {msg.role === 'user' && (
+                  <div className="text-[8px] font-bold uppercase tracking-widest mt-2 text-blue-200">
+                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
-          {isTyping && selectedExpert && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex flex-col items-start space-y-2 ml-2 mb-4"
-            >
-              <div className="flex items-center gap-3 px-5 py-3 bg-white/90 backdrop-blur-sm rounded-full border border-slate-100 shadow-sm">
-                <div className="flex gap-1.5">
-                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-duration:0.8s]" />
-                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]" />
-                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]" />
-                </div>
-                <span className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">
-                  {selectedExpert.name} yozmoqda
-                </span>
-              </div>
-            </motion.div>
+          {isTyping && (
+            <div className="flex gap-1.5 p-4 bg-white rounded-2xl border border-slate-100 w-20 items-center justify-center shadow-sm rounded-tl-none">
+              <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" />
+              <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]" />
+              <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]" />
+            </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
         {/* Input Area */}
-        <div className="fixed bottom-0 left-0 right-0 px-4 pb-[calc(env(safe-area-inset-bottom,16px)+16px)] pt-6 z-40 bg-gradient-to-t from-[#F8FAFC] via-[#F8FAFC]/90 to-transparent">
-          <div className="max-w-md mx-auto group">
-            <div className="absolute inset-0 bg-blue-600/5 blur-2xl rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-            <div className="relative bg-white/95 backdrop-blur-2xl p-2.5 rounded-[2.5rem] border border-white shadow-2xl shadow-blue-900/10 flex items-center gap-2 transition-all duration-300 group-focus-within:border-blue-100">
-              <input 
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Savolingizni yozing..."
-                className="flex-1 bg-transparent border-none focus:ring-0 text-[15px] font-normal px-5 py-2.5 outline-none text-slate-900 placeholder:text-slate-400 min-w-0"
-              />
-              <div className="flex items-center gap-2 shrink-0">
-                <button 
-                  onClick={toggleListening}
-                  className={cn(
-                    "w-12 h-12 rounded-[1.25rem] flex items-center justify-center transition-all active:scale-90",
-                    isListening ? "bg-rose-100 text-rose-600 shadow-rose-100 shadow-lg" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
-                  )}
-                >
-                  {isListening ? <MicOff size={22} className="animate-pulse" /> : <Mic size={22} />}
-                </button>
-                <button 
-                  onClick={handleSendMessage}
-                  disabled={!input.trim() || isTyping}
-                  className={cn(
-                    "w-12 h-12 rounded-[1.25rem] flex items-center justify-center transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:shadow-none",
-                    input.trim() ? "bg-blue-600 text-white shadow-blue-200" : "bg-slate-100 text-slate-300"
-                  )}
-                >
-                  <Send size={22} />
-                </button>
-              </div>
-            </div>
+        <div className="fixed bottom-4 left-0 right-0 px-6 z-40">
+          <div className="max-w-md mx-auto bg-white/80 backdrop-blur-2xl p-3 rounded-[2.5rem] border border-white shadow-2xl flex items-center gap-3">
+            <input 
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              placeholder="Savolingizni yozing..."
+              className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium px-4 py-2 outline-none text-slate-900 placeholder:text-slate-400"
+            />
+            <button 
+              onClick={toggleListening}
+              className={cn(
+                "w-12 h-12 aspect-square rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0",
+                isListening ? "bg-rose-100 text-rose-600 shadow-rose-100 shadow-lg" : "bg-slate-50 text-slate-400"
+              )}
+            >
+              {isListening ? <MicOff size={22} className="animate-pulse" /> : <Mic size={22} />}
+            </button>
+            <button 
+              onClick={handleSendMessage}
+              disabled={!input.trim() || isTyping}
+              className={cn(
+                "w-12 h-12 aspect-square rounded-full flex items-center justify-center transition-all shadow-lg active:scale-90 disabled:opacity-50 disabled:scale-100 shrink-0",
+                input.trim() ? "bg-blue-600 text-white shadow-blue-200" : "bg-slate-100 text-slate-400 shadow-none"
+              )}
+            >
+              <Send size={22} />
+            </button>
           </div>
         </div>
       </div>
@@ -749,55 +629,61 @@ export default function Consultation() {
   }
 
   return (
-      <div className="min-h-screen bg-[#F8FAFC] pb-24">
-        {/* Header */}
-        <div className="pt-12 px-5 mb-10 flex items-center gap-5">
-          <button 
-            onClick={() => navigate(-1)}
-            className="w-14 h-14 bg-white rounded-[1.25rem] flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all"
-          >
-            <ChevronLeft size={28} strokeWidth={2.5} />
-          </button>
-          <div>
-            <h1 className="text-4xl font-semibold text-[#0F172A] tracking-tight uppercase leading-none">AI EKSPERTLAR</h1>
-            <p className="text-[#2563EB] font-medium text-xs mt-2 uppercase tracking-[0.15em]">IXTISOSLASHGAN YORDAMCHINI TANLANG</p>
-          </div>
-        </div>
-
-        <div className="px-3 space-y-5">
-          {EXPERTS.map((expert) => (
-            <motion.button
-              key={expert.id}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleSelectExpert(expert)}
-              className="w-full bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-5 text-left group relative overflow-hidden transition-all hover:border-blue-100 hover:shadow-lg hover:shadow-blue-50/20"
-            >
-              <div className={cn(
-                "w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-sm shrink-0 transition-transform group-hover:scale-105",
-                expert.bgColor
-              )}>
-                <img 
-                  src={`https://emojicdn.elk.sh/${expert.icon}?style=apple`} 
-                  alt={expert.name}
-                  className="w-14 h-14 object-contain"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-              
-              <div className="flex-1 min-w-0 pr-2">
-                <h3 className="text-2xl font-semibold text-[#0F172A] tracking-tight leading-none mb-1.5">{expert.name}</h3>
-                <p className="text-xs font-medium text-[#2563EB] uppercase tracking-widest leading-none mb-3">{expert.title}</p>
-                <p className="text-sm text-slate-500 font-normal leading-relaxed line-clamp-2">
-                  {expert.description}
-                </p>
-              </div>
-              
-              <div className="text-slate-200 group-hover:text-blue-500 transition-all shrink-0 pr-1">
-                <ChevronRight size={28} />
-              </div>
-            </motion.button>
-          ))}
+    <div className="space-y-10 pb-32">
+      {/* Header */}
+      <div className="pt-12 flex items-center gap-4">
+        <button 
+          onClick={() => navigate(-1)}
+          className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all"
+        >
+          <ChevronLeft size={24} strokeWidth={2.5} />
+        </button>
+        <div>
+          <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight">EKSPERTLAR</h1>
+          <p className="text-[#2563EB] font-bold text-[10px] mt-1 uppercase tracking-widest">YORDAMCHINI TANLANG</p>
         </div>
       </div>
-    );
+
+      {/* Experts List */}
+      <div className="space-y-4">
+        {EXPERTS.map((expert) => (
+          <motion.button
+            key={expert.id}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleSelectExpert(expert)}
+            className="w-full bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-5 text-left group relative overflow-hidden transition-all hover:border-blue-100 hover:shadow-lg hover:shadow-blue-50/30"
+          >
+            {/* Decorative background element */}
+            <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50/50 rounded-full -mr-8 -mt-8 opacity-40 group-hover:bg-blue-50/50 transition-colors" />
+            
+            <div className={cn(
+              "w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-md relative z-10 transition-transform group-hover:scale-105 shrink-0",
+              expert.bgColor
+            )}>
+              <img 
+                src={`https://emojicdn.elk.sh/${expert.icon}?style=apple`} 
+                alt={expert.name}
+                className="w-10 h-10 object-contain"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            
+            <div className="flex-1 relative z-10 space-y-1">
+              <div>
+                <h3 className="text-lg font-bold text-[#0F172A] tracking-tight leading-none mb-1.5">{expert.name}</h3>
+                <p className="text-[10px] font-bold text-[#2563EB] uppercase tracking-widest leading-none">{expert.title}</p>
+              </div>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2 pr-6">
+                {expert.description}
+              </p>
+            </div>
+            
+            <div className="text-slate-200 group-hover:text-blue-500 transition-all group-hover:translate-x-1 shrink-0 pr-1">
+              <ChevronRight size={20} />
+            </div>
+          </motion.button>
+        ))}
+      </div>
+    </div>
+  );
 }

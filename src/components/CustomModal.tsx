@@ -67,7 +67,7 @@ export default function CustomModal({
               <div className="p-8 space-y-6">
                 <div className="flex items-center justify-between">
                   {title && (
-                    <h3 className="text-xl font-semibold text-slate-900 tracking-tight uppercase">
+                    <h3 className="text-xl font-bold text-slate-900 tracking-tight uppercase">
                       {title}
                     </h3>
                   )}
@@ -80,7 +80,7 @@ export default function CustomModal({
                 </div>
 
                 {message && (
-                  <p className="text-slate-500 text-sm font-normal leading-relaxed">
+                  <p className="text-slate-500 text-sm font-medium leading-relaxed">
                     {message}
                   </p>
                 )}
@@ -97,7 +97,7 @@ export default function CustomModal({
                           onClose();
                         }}
                         className={cn(
-                          "w-full h-14 rounded-2xl font-semibold text-[10px] uppercase tracking-widest transition-all active:scale-95",
+                          "w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95",
                           action.variant === 'danger' 
                             ? "bg-rose-50 text-rose-600 border border-rose-100" 
                             : action.variant === 'secondary'

@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { notificationService, AppNotification } from '../services/notificationService';
-import { medicineLogService } from '../services/medicineLogService';
 import { 
   Activity, 
   ChevronRight,
@@ -13,12 +11,10 @@ import {
   Search
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { cn, isPlaceholderName } from '../lib/utils';
 import CustomModal from '../components/CustomModal';
 import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
-import { activityService } from '../services/activityService';
-import { userService } from '../services/userService';
 
 const tg = window.Telegram?.WebApp;
 
@@ -81,7 +77,7 @@ const healthTipsData = [
 ];
 
 export default function Home() {
-  const { user, setUser } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [greeting, setGreeting] = useState('');
   const keyboardHeight = useKeyboardHeight();
@@ -91,101 +87,31 @@ export default function Home() {
     if (hour < 12) setGreeting('Xayrli tong');
     else if (hour < 18) setGreeting('Xayrli kun');
     else setGreeting('Xayrli kech');
+  }, []);
 
-    if (user?.uid) {
-      activityService.logPageView(user.uid, 'Home');
-    }
-  }, [user?.uid]);
-
-  const [modalType, setModalType] = useState<'meal' | 'weight' | 'health' | 'notification' | 'notifications_list' | null>(null);
+  const [modalType, setModalType] = useState<'meal' | 'weight' | 'health' | 'notification' | null>(null);
   const [notificationMsg, setNotificationMsg] = useState('');
   const [hasNewNotification, setHasNewNotification] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [currentAnnouncement, setCurrentAnnouncement] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!user?.uid) return;
-      try {
-        const data = await notificationService.getUserNotifications(user.uid);
-        setNotifications(data);
-        setHasNewNotification(data.some(n => !n.isRead));
-      } catch (err) {
-        console.error("Fetch notifications failed:", err);
-      }
-    };
-
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // Polling har 30 soniyada
-    
-    // Brauzer bildirshnomasi uchun ruxsat so'rash
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-
-    return () => clearInterval(interval);
-  }, [user?.uid]);
-
-  // Yangi bildirishnoma kelganda brauzer xabarini chiqarish
-  useEffect(() => {
-    const unread = notifications.filter(n => !n.isRead);
-    if (unread.length > 0) {
-      const latest = unread[0];
-      // Faqat agar app fonda bo'lsa yoki ruxsat berilgan bo'lsa
-      if ("Notification" in window && Notification.permission === "granted") {
-        new Notification(latest.title, {
-          body: latest.message,
-          icon: '/metadata.json' // Ikonka yo'qligi sababli metadata'dan foydalanamiz yoki biron rasm
-        });
-      }
-    }
-  }, [notifications]);
+    const cached = localStorage.getItem('last_seen_announcement_text');
+    if (cached) setCurrentAnnouncement(cached);
+  }, []);
 
   const handleBellClick = () => {
     if (tg?.HapticFeedback) {
       tg.HapticFeedback.impactOccurred('medium');
     }
-    setModalType('notifications_list');
-    if (user?.uid) {
-      activityService.logButtonClick(user.uid, 'notifications_bell');
-    }
-  };
 
-  const markAsTaken = async (n: AppNotification) => {
-    if (!user?.uid) return;
-    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-    
-    try {
-      // Log activity
-      activityService.logButtonClick(user.uid, 'mark_medicine_taken', { notificationId: n.id });
-      
-      // Dori nomini xabardan ajratib olishga harakat qilamiz (agar dori eslatmasi bo'lsa)
-      // Bizning xabarimiz: "${r.medicine_name} ni ichib oling siz uchun bu muhim"
-      const medicineName = n.message.split(' ni ichib oling')[0] || 'Dori';
-      
-      await medicineLogService.logIntake({
-        userId: user.uid,
-        medicineName: medicineName
-      });
-      
-      await notificationService.markAsRead(n.id);
-      setNotifications(prev => prev.map(notif => notif.id === n.id ? { ...notif, isRead: true } : notif));
-      setNotificationMsg(`${medicineName} ichilgani qayd etildi!`);
+    if (hasNewNotification && currentAnnouncement) {
+      setNotificationMsg(currentAnnouncement);
       setModalType('notification');
-    } catch (err) {
-      console.error("Mark as taken failed:", err);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    if (!user?.uid) return;
-    try {
-      activityService.logButtonClick(user.uid, 'mark_all_notifications_read');
-      const unread = notifications.filter(n => !n.isRead);
-      await Promise.all(unread.map(n => notificationService.markAsRead(n.id)));
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      
+      localStorage.setItem('last_seen_announcement_text', currentAnnouncement);
       setHasNewNotification(false);
-    } catch (err) {
-      console.error("Mark as read failed:", err);
+    } else {
+      handleAction("Yangi bildirishnomalar yo'q.");
     }
   };
 
@@ -200,9 +126,6 @@ export default function Home() {
   const handleNavigate = (path: string) => {
     if (tg?.HapticFeedback) {
       tg.HapticFeedback.impactOccurred('light');
-    }
-    if (user?.uid) {
-      activityService.logButtonClick(user.uid, `navigate_to_${path.replace('/', '')}`);
     }
     navigate(path);
   };
@@ -224,8 +147,8 @@ export default function Home() {
 
     if (user) {
       if (user.bloodPressure) setBpPulse(user.bloodPressure);
-      if (user.weight) setWeight(String(user.weight));
-      if (user.height) setHeight(String(user.height));
+      if (user.weight) setWeight(user.weight);
+      if (user.height) setHeight(user.height);
       
       setHealthInput({
         bp: user.bloodPressure || '',
@@ -237,9 +160,6 @@ export default function Home() {
   const handleShowMealPlan = () => {
     if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     setModalType('meal');
-    if (user?.uid) {
-      activityService.logButtonClick(user.uid, 'view_meal_plan');
-    }
   };
 
   const calculateBMI = () => {
@@ -260,17 +180,11 @@ export default function Home() {
   const handleLogWeight = () => {
     if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     setModalType('weight');
-    if (user?.uid) {
-      activityService.logButtonClick(user.uid, 'open_weight_modal');
-    }
   };
 
   const handleLogHealth = () => {
     if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     setModalType('health');
-    if (user?.uid) {
-      activityService.logButtonClick(user.uid, 'open_health_modal');
-    }
   };
 
   const handleSaveWeight = async () => {
@@ -280,25 +194,12 @@ export default function Home() {
     }
 
     try {
-      if (user?.uid) {
-        activityService.logButtonClick(user.uid, 'save_weight', { weight, height });
-        
-        // Save to server
-        const updatedUser = await userService.updateProfile(user.uid, {
-          weight: parseFloat(weight),
-          height: parseFloat(height)
-        });
-        if (updatedUser) setUser(updatedUser);
-      }
-      
       localStorage.setItem('health_weight', weight);
       localStorage.setItem('health_height', height);
       
       setNotificationMsg("Vazn ma'lumotlari saqlandi!");
       setModalType('notification');
-      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } catch (error) {
-      console.error("Error saving weight:", error);
       alert("Ma'lumotlarni saqlashda xatolik yuz berdi.");
     }
   };
@@ -310,17 +211,6 @@ export default function Home() {
     }
 
     try {
-      if (user?.uid) {
-        activityService.logButtonClick(user.uid, 'save_health_data', { bp: healthInput.bp, pulse: healthInput.pulse });
-        
-        // Save to server
-        const updatedUser = await userService.updateProfile(user.uid, {
-          bloodPressure: healthInput.bp,
-          pulse: healthInput.pulse
-        } as any);
-        if (updatedUser) setUser(updatedUser);
-      }
-      
       const newBp = `${healthInput.bp}`;
       setBpPulse(newBp);
       localStorage.setItem('health_bp', newBp);
@@ -328,9 +218,7 @@ export default function Home() {
       
       setNotificationMsg("Salomatlik ma'lumotlari saqlandi!");
       setModalType('notification');
-      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } catch (error) {
-      console.error("Error saving health data:", error);
       alert("Ma'lumotlarni saqlashda xatolik yuz berdi.");
     }
   };
@@ -342,16 +230,10 @@ export default function Home() {
   ];
 
   const [nextReminder, setNextReminder] = useState<any>(null);
-  
-  const getDisplayName = () => {
-    if (!user) return 'Foydalanuvchi';
-    if (!isPlaceholderName(user.displayName)) return user.displayName?.trim() || 'Foydalanuvchi';
-    if (user.username) return `@${user.username}`;
-    return 'Foydalanuvchi';
-  };
-
-  const displayName = getDisplayName();
-  const firstName = displayName.split(' ')[0];
+  const displayName = !isPlaceholderName(user?.displayName)
+    ? user?.displayName?.trim()
+    : (user?.username ? `@${user.username}` : 'Foydalanuvchi');
+  const firstName = displayName ? displayName.split(' ')[0] : 'Foydalanuvchi';
 
   useEffect(() => {
     try {
@@ -390,51 +272,12 @@ export default function Home() {
           modalType === 'meal' ? 'Sog\'lom ovqatlanish rejasi' :
           modalType === 'weight' ? 'Vazn va BMI' :
           modalType === 'health' ? 'Salomatlik' :
-          modalType === 'notifications_list' ? 'Bildirishnomalar' :
           'Bildirishnoma'
         }
         message={
           modalType === 'meal' ? 'Bugun uchun tavsiya etilgan menyu' :
           modalType === 'weight' ? 'Vazningiz va bo\'yingizni kiriting' :
           modalType === 'health' ? 'Qon bosimi va pulsni kiriting' :
-          modalType === 'notifications_list' ? (
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-              {notifications.length > 0 ? (
-                notifications.map((n) => (
-                  <div key={n.id} className={cn(
-                    "p-4 rounded-2xl border transition-all",
-                    n.isRead ? "bg-slate-50 border-slate-100" : "bg-blue-50 border-blue-100"
-                  )}>
-                    <div className="flex justify-between items-start mb-1">
-                      <h4 className="font-semibold text-slate-900 text-sm">{n.title}</h4>
-                      {!n.isRead && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
-                    </div>
-                    <p className="text-xs text-slate-600 leading-relaxed">{n.message}</p>
-                    <div className="flex justify-between items-center mt-3">
-                      <p className="text-[10px] text-slate-400 font-medium">
-                        {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                      {!n.isRead && n.title === 'Dori ichish vaqti!' && (
-                        <button 
-                          onClick={() => markAsTaken(n)}
-                          className="px-3 py-1 bg-blue-600 text-white text-[10px] font-semibold rounded-lg shadow-md shadow-blue-100 active:scale-95 transition-all"
-                        >
-                          DORI ICHILDI
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="py-12 text-center space-y-3">
-                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300">
-                    <Bell size={32} />
-                  </div>
-                  <p className="text-slate-400 text-sm font-medium">Hozircha bildirishnomalar yo'q</p>
-                </div>
-              )}
-            </div>
-          ) :
           notificationMsg
         }
         actions={
@@ -457,15 +300,6 @@ export default function Home() {
             },
             { label: 'Bekor qilish', onClick: () => setModalType(null), variant: 'secondary' }
           ] :
-          modalType === 'notifications_list' ? [
-            { 
-              label: 'Barchasini o\'qish', 
-              onClick: markAllAsRead, 
-              variant: 'primary',
-              disabled: !hasNewNotification 
-            },
-            { label: 'Yopish', onClick: () => setModalType(null), variant: 'secondary' }
-          ] :
           modalType === 'notification' ? [
             { label: 'Tushunarli', onClick: () => setModalType(null), variant: 'primary' }
           ] :
@@ -481,8 +315,8 @@ export default function Home() {
               { label: 'Tamaddi (Snek)', value: mealPlan.snack, color: 'bg-purple-50 text-purple-700 border-purple-100' }
             ].map((meal, idx) => (
               <div key={idx} className={cn("p-4 rounded-2xl border space-y-1", meal.color)}>
-                <p className="text-[10px] font-medium uppercase tracking-widest opacity-70">{meal.label}</p>
-                <p className="text-sm font-normal leading-tight">{meal.value}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">{meal.label}</p>
+                <p className="text-sm font-bold leading-tight">{meal.value}</p>
               </div>
             ))}
           </div>
@@ -492,59 +326,58 @@ export default function Home() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[9px] font-medium text-slate-400 uppercase tracking-widest ml-1">Vazn (kg)</label>
+                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Vazn (kg)</label>
                 <input 
                   type="number" 
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
                   placeholder="70"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[9px] font-medium text-slate-400 uppercase tracking-widest ml-1">Bo'y (cm)</label>
+                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Bo'y (cm)</label>
                 <input 
                   type="number" 
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
                   placeholder="175"
                 />
               </div>
             </div>
-            
-            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
-              <div className="flex justify-between items-center">
-                <p className="text-[10px] font-medium text-blue-600 uppercase tracking-widest mb-1">Sizning BMI ko'rsatkichingiz</p>
-                <span className="text-xl font-semibold text-blue-700">{calculateBMI() || '0.0'}</span>
+            {calculateBMI() && (
+              <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 text-center">
+                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Sizning BMI ko'rsatkichingiz</p>
+                <p className="text-3xl font-black text-blue-700">{calculateBMI()}</p>
+                <p className="text-[11px] font-bold text-blue-500 uppercase tracking-wider mt-1">
+                  Holat: {getBMIStatus(parseFloat(calculateBMI()!))}
+                </p>
               </div>
-              <p className="text-[11px] font-medium text-blue-500 uppercase tracking-wider mt-1">
-                Holat: <span className="font-semibold">{calculateBMI() ? getBMIStatus(parseFloat(calculateBMI()!)) : '...'}</span>
-              </p>
-            </div>
+            )}
           </div>
         )}
 
         {modalType === 'health' && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-[9px] font-medium text-slate-400 uppercase tracking-widest ml-1">Qon bosimi</label>
+              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Qon bosimi</label>
               <input 
                 type="text" 
-                placeholder="120/80"
                 value={healthInput.bp}
                 onChange={(e) => setHealthInput(prev => ({ ...prev, bp: e.target.value }))}
-                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
+                placeholder="120/80"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[9px] font-medium text-slate-400 uppercase tracking-widest ml-1">Puls</label>
+              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Puls</label>
               <input 
-                type="number" 
-                placeholder="75"
+                type="text" 
                 value={healthInput.pulse}
                 onChange={(e) => setHealthInput(prev => ({ ...prev, pulse: e.target.value }))}
-                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 transition-all"
+                placeholder="75"
               />
             </div>
           </div>
@@ -552,40 +385,40 @@ export default function Home() {
       </CustomModal>
 
       {/* Header */}
-      <div className="flex items-center justify-between px-1 mb-2">
+      <div className="flex items-center justify-between px-1">
         <div className="pt-4">
-          <p className="text-[#2563EB] font-medium text-[11px] uppercase tracking-[0.25em] leading-none mb-3">
+          <p className="text-[#2563EB] font-semibold text-[10px] uppercase tracking-[0.22em] leading-none">
             {greeting}
           </p>
-          <h1 className="text-5xl font-semibold text-[#0F172A] tracking-tighter leading-none">
+          <h1 className="text-[34px] font-semibold text-[#0F172A] tracking-tight leading-[1.08] mt-2">
             {firstName}
           </h1>
         </div>
         <button 
           onClick={handleBellClick}
-          className="w-16 h-16 bg-white rounded-[1.5rem] flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all relative mt-4"
+          className="w-14 h-14 bg-white rounded-3xl flex items-center justify-center shadow-sm border border-slate-200 text-slate-400 relative active:scale-90 transition-all"
         >
-          <Bell size={28} strokeWidth={2.5} />
+          <Bell size={22} strokeWidth={2.2} />
           {hasNewNotification && (
-            <span className="absolute top-5 right-5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-full animate-pulse" />
+            <span className="absolute top-4 right-4 w-2.5 h-2.5 bg-rose-500 border-2 border-white rounded-full" />
           )}
         </button>
       </div>
 
       {/* Daily Stats Grid */}
-      <div className="grid grid-cols-3 gap-4 pt-4">
+      <div className="grid grid-cols-3 gap-4">
         {stats.map((stat, idx) => (
           <button
             key={idx}
             onClick={stat.onClick}
-            className="bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center text-center gap-4 cursor-pointer active:scale-95 transition-all outline-none group hover:border-blue-100"
+            className="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center text-center gap-3 cursor-pointer active:scale-95 transition-all outline-none group hover:border-blue-100"
           >
-            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm", stat.bgColor, stat.color)}>
-              <stat.icon size={24} />
+            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110", stat.bgColor, stat.color)}>
+              <stat.icon size={20} />
             </div>
-            <div className="space-y-1">
-              <p className="text-[20px] font-semibold text-slate-900 leading-none">{stat.value}</p>
-              <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">{stat.label}</p>
+            <div>
+              <p className="text-[18px] font-bold text-slate-900 leading-none">{stat.value}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{stat.label}</p>
             </div>
           </button>
         ))}
@@ -595,25 +428,25 @@ export default function Home() {
       <motion.div 
         whileTap={{ scale: 0.98 }}
         onClick={() => handleNavigate('/consult')}
-        className="bg-[#2563EB] rounded-[2.5rem] p-8 text-white shadow-2xl shadow-blue-200/50 relative overflow-hidden group cursor-pointer mt-4"
+        className="bg-blue-600 rounded-[2rem] p-6 text-white shadow-xl shadow-blue-200/40 relative overflow-hidden group cursor-pointer"
       >
-        <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-white/20 transition-all duration-500" />
-        <div className="relative z-10 space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-inner">
-              <Sparkles className="text-white" size={28} />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl" />
+        <div className="relative z-10 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center">
+              <Sparkles className="text-white" size={22} />
             </div>
             <div>
-              <h3 className="text-3xl font-semibold tracking-tighter uppercase leading-none">AI DIAGNOSTIKA</h3>
-              <p className="text-blue-100/80 text-[10px] font-medium uppercase tracking-[0.2em] mt-1.5">Sog'lig'ingizni tekshiring</p>
+              <h3 className="text-[22px] font-bold tracking-tight uppercase">AI DIAGNOSTIKA</h3>
+              <p className="text-blue-100 text-[10px] font-bold uppercase tracking-widest">Sog'lig'ingizni tekshiring</p>
             </div>
           </div>
-          <p className="text-blue-50 text-base font-normal leading-tight opacity-90 max-w-[260px]">
-            Simptomlaringizni yozing va AI yordamida tezkor tavsiyalarni oling
+          <p className="text-blue-50 text-[13px] font-medium leading-relaxed opacity-90">
+            Simptomlaringizni yozing va sun'iy intellekt yordamida tezkor tahlil hamda tavsiyalarni oling.
           </p>
-          <div className="pt-2">
-            <span className="inline-flex items-center gap-2.5 px-6 py-3 bg-white text-[#2563EB] rounded-xl text-[10px] font-semibold uppercase tracking-widest shadow-xl group-hover:gap-4 transition-all">
-              Boshlash <ChevronRight size={14} strokeWidth={3} />
+          <div className="pt-0.5">
+            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-700 rounded-lg text-[9px] font-bold uppercase tracking-wider shadow-lg">
+              Boshlash <ChevronRight size={12} />
             </span>
           </div>
         </div>
@@ -622,10 +455,10 @@ export default function Home() {
       {/* Upcoming Reminders */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-2">
-          <h3 className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">ESLATMA</h3>
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">ESLATMALAR</h3>
           <button 
             onClick={() => handleNavigate('/reminders')} 
-            className="text-[9px] font-semibold text-blue-600 uppercase tracking-widest"
+            className="text-[9px] font-bold text-blue-600 uppercase tracking-widest"
           >
             Hammasi
           </button>
@@ -640,8 +473,8 @@ export default function Home() {
                 <Pill size={22} />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-[15px] font-semibold text-slate-900 uppercase truncate">{nextReminder.title}</h4>
-                <p className="text-[10px] font-normal text-slate-400 uppercase tracking-widest mt-1">Bugun • {nextReminder.time}</p>
+                <h4 className="text-[15px] font-bold text-slate-900 uppercase truncate">{nextReminder.title}</h4>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Bugun • {nextReminder.time}</p>
               </div>
               <div className="w-8 h-8 rounded-full border border-slate-100 flex items-center justify-center text-slate-200 group-hover:border-blue-600 group-hover:text-blue-600 transition-all">
                 <ChevronRight size={16} />
@@ -652,8 +485,8 @@ export default function Home() {
               onClick={() => handleNavigate('/reminders')}
               className="p-8 text-center space-y-2 cursor-pointer hover:bg-slate-50 transition-colors"
             >
-              <p className="text-[9px] font-medium text-slate-300 uppercase tracking-widest">Hozircha eslatmalar yo'q</p>
-              <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-widest">+ Yangi qo'shish</p>
+              <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Hozircha eslatmalar yo'q</p>
+              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">+ Yangi qo'shish</p>
             </div>
           )}
         </div>
@@ -669,9 +502,9 @@ export default function Home() {
             <div className="w-9 h-9 bg-emerald-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
               <Search size={18} />
             </div>
-            <h3 className="text-[10px] font-medium text-emerald-700 uppercase tracking-[0.2em]">KUN MASLAHATI</h3>
+            <h3 className="text-[10px] font-bold text-emerald-700 uppercase tracking-[0.2em]">KUN MASLAHATI</h3>
           </div>
-          <p className="text-slate-800 font-normal leading-relaxed text-[14px] italic">
+          <p className="text-slate-800 font-semibold leading-relaxed text-[14px] italic">
             "{getDailyTip()}"
           </p>
         </div>

@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  User as UserIcon, Activity, Heart, Calendar, Ruler, Weight
+  User as UserIcon, Activity, Heart, Calendar, Ruler, Weight, ShieldCheck
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import CustomModal from '../components/CustomModal';
-import { activityService } from '../services/activityService';
 
 import { userService, UserProfile } from '../services/userService';
 
@@ -16,6 +15,7 @@ const tg = window.Telegram?.WebApp;
 export default function Profile() {
   const { user, setUser } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
     title?: string;
@@ -29,19 +29,16 @@ export default function Profile() {
   const [adminClicks, setAdminClicks] = useState(0);
   const [textInput, setTextInput] = useState('');
   
-  const [profile, setProfile] = useState<Partial<UserProfile>>(user as any || {});
+  const [profile, setProfile] = useState<Partial<UserProfile>>(user || {});
 
   useEffect(() => {
-    if (user) {
-      setProfile(user as any);
-      activityService.logPageView(user.uid, 'Profile');
-    }
+    if (user) setProfile(user);
   }, [user]);
 
   const updateField = async (field: keyof UserProfile, value: any) => {
     if (!user?.uid) return;
+    setLoading(true);
     try {
-      activityService.logButtonClick(user.uid, `update_profile_${field}`, { value });
       const updatedData = { [field]: value };
       await userService.updateProfile(user.uid, updatedData);
       const newProfile = { ...profile, ...updatedData };
@@ -51,6 +48,7 @@ export default function Profile() {
     } catch (err) {
       console.error("Update failed:", err);
     } finally {
+      setLoading(false);
       setModalConfig(prev => ({ ...prev, isOpen: false }));
       setTextInput('');
     }
@@ -155,8 +153,8 @@ export default function Profile() {
         <Icon size={24} />
       </div>
       <div>
-        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none mb-2">{label}</p>
-        <p className={cn("font-semibold text-slate-900", !value || value === 'Kiritilmagan' ? "text-[10px] uppercase tracking-wider text-slate-400/60" : "text-xl")}>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-2">{label}</p>
+        <p className={cn("font-bold text-slate-900", !value || value === 'Kiritilmagan' ? "text-[10px] uppercase tracking-wider text-slate-400/60" : "text-xl")}>
           {value || 'Kiritilmagan'}
         </p>
       </div>
@@ -184,7 +182,7 @@ export default function Profile() {
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
             placeholder="..."
-            className="w-full h-12 px-4 mt-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-center tracking-widest"
+            className="w-full h-12 px-4 mt-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-center tracking-widest"
             autoFocus
           />
         )}
@@ -192,8 +190,8 @@ export default function Profile() {
 
       {/* Header */}
       <div className="pt-12">
-        <h1 className="text-3xl font-semibold text-[#0F172A] tracking-tight">PROFIL</h1>
-        <p className="text-[#2563EB] font-medium text-[10px] mt-1 uppercase tracking-widest">SHAXSIY MA'LUMOTLAR</p>
+        <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight">PROFIL</h1>
+        <p className="text-[#2563EB] font-bold text-[10px] mt-1 uppercase tracking-widest">SHAXSIY MA'LUMOTLAR</p>
       </div>
 
       {/* Main Profile Card */}
@@ -214,7 +212,7 @@ export default function Profile() {
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <Activity size={20} className="text-[#2563EB]" />
-          <h3 className="text-sm font-semibold text-[#0F172A] uppercase tracking-wider">TIBBIY KO'RSATKICHLAR</h3>
+          <h3 className="text-sm font-bold text-[#0F172A] uppercase tracking-wider">TIBBIY KO'RSATKICHLAR</h3>
         </div>
         
         <div className="grid grid-cols-2 gap-4">
@@ -252,14 +250,14 @@ export default function Profile() {
       {/* BMI Card */}
       <div className="bg-white p-7 rounded-[2.5rem] border border-slate-50 shadow-sm flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold text-slate-400 tracking-wider mb-1 uppercase">BMI INDEKSI</p>
-          <p className="text-xs text-slate-400 font-normal">Tana massa indeksi</p>
+          <p className="text-xs font-bold text-slate-400 tracking-wider mb-1 uppercase">BMI INDEKSI</p>
+          <p className="text-xs text-slate-400 font-medium">Tana massa indeksi</p>
         </div>
         <div className="text-right">
-          <p className={cn("text-4xl font-semibold mb-1", bmiValue && parseFloat(bmiValue) > 25 ? "text-rose-500" : "text-emerald-500")}>
+          <p className={cn("text-4xl font-black mb-1", bmiValue && parseFloat(bmiValue) > 25 ? "text-rose-500" : "text-emerald-500")}>
             {bmiValue || '--'}
           </p>
-          <p className={cn("font-medium uppercase tracking-wider", !bmiInfo ? "text-[8px] text-slate-400/60" : cn("text-[10px]", bmiInfo.color))}>
+          <p className={cn("font-bold uppercase tracking-wider", !bmiInfo ? "text-[8px] text-slate-400/60" : cn("text-[10px]", bmiInfo.color))}>
             {bmiInfo?.label || 'Kiritilmagan'}
           </p>
         </div>
@@ -268,12 +266,12 @@ export default function Profile() {
       {/* Daily Queries Card */}
       <div className="bg-white p-7 rounded-[2.5rem] border border-slate-50 shadow-sm flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-[#0F172A] tracking-wider mb-1 uppercase">KUNLIK SO'ROVLAR</p>
-          <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">BUGUNGI ISHLATILGAN LIMIT</p>
+          <p className="text-sm font-bold text-[#0F172A] tracking-wider mb-1 uppercase">KUNLIK SO'ROVLAR</p>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">BUGUNGI ISHLATILGAN LIMIT</p>
         </div>
         <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-semibold text-[#2563EB]">5</span>
-          <span className="text-sm font-medium text-slate-300">/ 10</span>
+          <span className="text-2xl font-black text-[#2563EB]">5</span>
+          <span className="text-sm font-bold text-slate-300">/ 10</span>
         </div>
       </div>
 
@@ -281,7 +279,7 @@ export default function Profile() {
       <div className="text-center pt-8">
         <button 
           onClick={handleVersionClick}
-          className="text-[10px] font-medium text-slate-300 tracking-[0.2em] uppercase hover:text-blue-400 transition-colors"
+          className="text-[10px] font-bold text-slate-300 tracking-[0.2em] uppercase hover:text-blue-400 transition-colors"
         >
           MEDAI V1.0.0
         </button>

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -136,8 +136,7 @@ export default function Registration() {
   };
 
   return (
-    <div className="fixed inset-0 bg-white flex items-center justify-center">
-      <div className="fixed inset-x-0 top-0 bottom-0 w-full max-w-[430px] mx-auto bg-[#F9FBFF] overflow-hidden flex flex-col items-center justify-center p-6 shadow-2xl">
+    <div className="fixed inset-0 bg-[#F9FBFF] overflow-hidden flex flex-col items-center justify-center p-6">
       <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-100 rounded-full blur-[120px] opacity-30" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-50 rounded-full blur-[100px] opacity-50" />
 
@@ -173,7 +172,7 @@ export default function Registration() {
 
               <div className="space-y-8">
                 <div className="text-center space-y-3 px-2">
-                  <h1 className="text-[28px] font-semibold text-[#0A0F29] tracking-tight leading-tight font-display">{STEPS[currentStep].title}</h1>
+                  <h1 className="text-[28px] font-[800] text-[#0A0F29] tracking-tight leading-tight font-display">{STEPS[currentStep].title}</h1>
                   <p className="text-[#64748B] text-[15px] font-medium leading-relaxed font-sans">{STEPS[currentStep].description}</p>
                 </div>
 
@@ -202,7 +201,7 @@ export default function Registration() {
                       <input 
                           ref={inputRef}
                           type="number" 
-                          className="input-field text-center max-w-[200px] font-sans font-medium" 
+                          className="input-field text-center max-w-[200px] font-sans" 
                           placeholder="Yosh" 
                           value={formData.age} 
                           onChange={(e) => updateField('age', e.target.value)} 
@@ -219,7 +218,7 @@ export default function Registration() {
                     {[{ label: 'Erkak', emoji: 'https://emojicdn.elk.sh/👨?style=apple&size=512' }, { label: 'Ayol', emoji: 'https://emojicdn.elk.sh/👩?style=apple&size=512' }].map((g) => (
                       <button key={g.label} onClick={() => updateField('gender', g.label)} className={`p-6 rounded-[24px] border-2 transition-all duration-300 flex flex-col items-center gap-3 active:scale-95 ${formData.gender === g.label ? 'border-[#0052FF] bg-blue-50/50 text-[#0052FF] shadow-lg shadow-blue-100' : 'border-[#F1F5F9] bg-[#F8FAFC] text-slate-400'}`}>
                         <img src={g.emoji} alt={g.label} className="w-12 h-12 mb-1" loading="eager" />
-                        <span className="font-semibold text-sm tracking-wide font-display">{g.label.toUpperCase()}</span>
+                        <span className="font-bold text-sm tracking-wide font-display">{g.label.toUpperCase()}</span>
                       </button>
                     ))}
                   </motion.div>
@@ -241,12 +240,12 @@ export default function Registration() {
                         <input
                           ref={inputRef}
                           type="number"
-                          className="input-field text-center max-w-[180px] font-sans font-medium"
+                          className="input-field text-center max-w-[180px] font-sans"
                           placeholder="0"
                           value={currentStep === 3 ? formData.weight : formData.height}
                           onChange={(e) => updateField(currentStep === 3 ? 'weight' : 'height', e.target.value)}
                         />
-                      <span className="text-3xl font-semibold text-blue-200 select-none font-display w-12">{currentStep === 3 ? 'KG' : 'CM'}</span>
+                      <span className="text-3xl font-black text-blue-200 select-none font-display w-12">{currentStep === 3 ? 'KG' : 'CM'}</span>
                     </div>
                   </motion.div>
                 )}
@@ -259,7 +258,7 @@ export default function Registration() {
                       className="w-20 h-20" 
                       loading="eager"
                     />
-                    <p className="text-[#64748B] font-medium font-sans">
+                    <p className="text-[#64748B] font-semibold font-sans">
                       {saving ? "Ma'lumotlar saqlanmoqda..." : "Tayyor! Profilga o'tishingiz mumkin"}
                     </p>
                   </div>
@@ -269,7 +268,7 @@ export default function Registration() {
                 <button
                   onClick={nextStep}
                   disabled={isInvalid || saving}
-                  className={`w-full p-5 rounded-2xl flex items-center justify-center gap-3 font-semibold text-base uppercase tracking-widest transition-all duration-200 font-display active:scale-[0.98] ${
+                  className={`w-full p-5 rounded-2xl flex items-center justify-center gap-3 font-extrabold text-base uppercase tracking-widest transition-all duration-200 font-display active:scale-[0.98] ${
                     isInvalid || saving ? 'bg-slate-50 text-slate-300 cursor-not-allowed' : 'bg-[#0052FF] text-white shadow-[0_15px_30px_-5px_rgba(0,82,255,0.3)]'
                   }`}
                 >
@@ -280,7 +279,6 @@ export default function Registration() {
           </motion.div>
         </AnimatePresence>
       </div>
-    </div>
     </div>
   );
 }

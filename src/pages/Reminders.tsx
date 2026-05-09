@@ -114,16 +114,16 @@ export default function Reminders() {
           <ChevronLeft size={24} strokeWidth={2.5} />
         </button>
         <div>
-          <h1 className="text-3xl font-semibold text-[#0F172A] tracking-tight">ESLATMALAR</h1>
-          <p className="text-[#2563EB] font-medium text-[10px] mt-1 uppercase tracking-widest">DORI QABULI NAZORATI</p>
+          <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight">ESLATMALAR</h1>
+          <p className="text-[#2563EB] font-bold text-[10px] mt-1 uppercase tracking-widest">DORI QABULI NAZORATI</p>
         </div>
       </div>
 
       {/* Summary Section */}
       <section className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center justify-between group">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-slate-900 tracking-tight uppercase">Yangi dori</h2>
-          <p className="text-slate-400 text-[9px] font-medium uppercase tracking-widest">Vaqtida ichish nazorati</p>
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight uppercase">Yangi dori</h2>
+          <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">Vaqtida ichish nazorati</p>
         </div>
         <button 
           onClick={() => setIsAdding(!isAdding)}
@@ -147,27 +147,27 @@ export default function Reminders() {
           >
             <div className="space-y-5">
               <div className="space-y-2">
-                <label className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.2em] ml-2">Dori nomi</label>
+                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-2">Dori nomi</label>
                 <input
                   type="text"
                   value={newReminder.title}
                   onChange={(e) => setNewReminder({ ...newReminder, title: e.target.value })}
                   placeholder="Masalan: Paratsetamol"
-                  className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-medium text-slate-900"
+                  className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-semibold text-slate-900"
                 />
               </div>
               <div className="grid grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <label className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.2em] ml-2">Vaqt</label>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-2">Vaqt</label>
                   <input
                     type="time"
                     value={newReminder.time}
                     onChange={(e) => setNewReminder({ ...newReminder, time: e.target.value })}
-                    className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-semibold text-slate-900"
+                    className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-bold text-slate-900"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.2em] ml-2">Kunlar</label>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-2">Kunlar</label>
                   <div className="flex flex-wrap gap-1">
                     {daysOfWeek.map((day) => (
                       <button
@@ -179,7 +179,7 @@ export default function Reminders() {
                           setNewReminder({ ...newReminder, days });
                         }}
                         className={cn(
-                          "w-8 h-8 rounded-lg text-[9px] font-semibold transition-all uppercase tracking-tighter",
+                          "w-8 h-8 rounded-lg text-[9px] font-bold transition-all uppercase tracking-tighter",
                           newReminder.days.includes(day) ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-slate-50 text-slate-400 border border-slate-100"
                         )}
                       >
@@ -192,13 +192,13 @@ export default function Reminders() {
               <div className="flex gap-3 pt-2">
                 <button 
                   onClick={() => setIsAdding(false)}
-                  className="flex-1 h-14 bg-slate-50 text-slate-500 rounded-xl font-semibold text-[10px] uppercase tracking-widest active:scale-95 transition-all"
+                  className="flex-1 h-14 bg-slate-50 text-slate-500 rounded-xl font-bold text-[10px] uppercase tracking-widest active:scale-95 transition-all"
                 >
                   Bekor qilish
                 </button>
                 <button 
                   onClick={handleAdd}
-                  className="flex-1 h-14 bg-blue-600 text-white rounded-xl font-semibold text-[10px] uppercase tracking-widest shadow-lg shadow-blue-200 active:scale-95 transition-all"
+                  className="flex-1 h-14 bg-blue-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-blue-200 active:scale-95 transition-all"
                 >
                   Saqlash
                 </button>
@@ -232,10 +232,10 @@ export default function Reminders() {
                   <Clock size={28} />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-lg font-semibold text-slate-900 tracking-tight">{reminder.medicineName}</h3>
+                  <h3 className="text-lg font-bold text-slate-900 tracking-tight">{reminder.medicineName}</h3>
                   <div className="flex items-center gap-2.5">
-                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-lg">{reminder.time}</span>
-                    <span className="text-[9px] font-medium text-slate-300 uppercase tracking-widest">{reminder.days.join(', ')}</span>
+                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-lg">{reminder.time}</span>
+                    <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{reminder.days.join(', ')}</span>
                   </div>
                 </div>
               </div>
@@ -264,7 +264,7 @@ export default function Reminders() {
             <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto text-slate-200">
               <Bell size={32} />
             </div>
-            <p className="text-slate-400 text-[10px] font-medium uppercase tracking-[0.2em]">Hali eslatmalar yo'q</p>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Hali eslatmalar yo'q</p>
           </div>
         )}
       </div>
