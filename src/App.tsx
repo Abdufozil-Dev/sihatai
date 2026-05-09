@@ -121,8 +121,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const showNav = location.pathname !== '/register';
 
   return (
-    <div className="min-h-screen bg-slate-900 flex justify-center overflow-x-hidden">
-      <div className="w-full max-w-md bg-[#F8FAFC] min-h-screen flex flex-col relative shadow-2xl">
+    <div className="min-h-screen bg-[#F8FAFC] flex justify-center overflow-x-hidden">
+      <div className="w-full max-w-md bg-[#F8FAFC] min-h-screen flex flex-col relative shadow-[0_0_50px_rgba(0,0,0,0.05)] border-x border-slate-50">
         <ReminderChecker />
         {/* Main Content */}
         <main className={cn("flex-1 w-full px-4 pt-12", showNav ? "pb-40" : "pb-12")}>
@@ -131,25 +131,25 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
         {/* Bottom Nav */}
         {showNav && (
-          <nav className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-2xl border-t border-slate-100 z-50 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-            <div className="px-6 h-24 flex items-center justify-between relative">
+          <nav className="fixed bottom-0 w-full max-w-md bg-white/80 backdrop-blur-2xl border-t border-slate-100 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+            <div className="px-6 h-24 flex items-center justify-between relative pb-[env(safe-area-inset-bottom,0px)]">
               {navItems.map((item) => (
                 item.isCenter ? (
-                  <div key={item.path} className="relative -top-6 flex flex-col items-center">
+                  <div key={item.path} className="relative -top-7 flex flex-col items-center">
                     <Link
                       to={item.path}
                       onClick={handleNavClick}
                       className={cn(
                         "w-16 h-16 rounded-full flex items-center justify-center shadow-xl transition-all border-4 border-white group",
                         location.pathname === item.path 
-                          ? "bg-blue-600 text-white scale-105 shadow-blue-200" 
-                          : "bg-blue-500 text-white hover:scale-105 shadow-blue-100"
+                          ? "bg-blue-600 text-white scale-110 shadow-blue-200" 
+                          : "bg-blue-500 text-white hover:scale-110 shadow-blue-100"
                       )}
                     >
                       <item.icon size={28} className="group-active:scale-90 transition-transform" />
                     </Link>
                     <span className={cn(
-                      "text-[8px] font-black mt-2 text-center w-20 leading-tight uppercase tracking-wider",
+                      "text-[8px] font-black mt-1.5 text-center w-20 leading-tight uppercase tracking-wider",
                       location.pathname === item.path ? "text-blue-600" : "text-slate-400"
                     )}>
                       {item.label}
@@ -161,7 +161,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                       to={item.path}
                       onClick={handleNavClick}
                       className={cn(
-                        "flex flex-col items-center gap-2 transition-all flex-1 py-3 rounded-2xl group",
+                        "flex flex-col items-center gap-1.5 transition-all flex-1 py-2 group",
                         location.pathname === item.path ? "text-blue-600" : "text-slate-400 hover:text-slate-600"
                       )}
                     >
