@@ -24,11 +24,16 @@ function mapUserRowToProfile(row: any) {
     weight: row.weight ?? undefined,
     bloodGroup: row.blood_group ?? undefined,
     bloodPressure: row.blood_pressure ?? undefined,
+    pulse: row.pulse ?? undefined,
     chronicDiseases: row.chronic_diseases ?? undefined,
     allergies: row.allergies ?? undefined,
+    subscription: row.subscription ?? 'none',
+    expiresAt: row.expires_at ?? undefined,
+    trialUsed: Boolean(row.trial_used ?? false),
     dailyRequestCount: Number(row.daily_request_count ?? 0),
     lastRequestDate: row.last_request_date ?? new Date().toISOString().split('T')[0],
     isBlocked: Boolean(row.is_blocked ?? false),
+    role: row.role ?? 'user',
     createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
     updatedAt: row.updated_at ? new Date(row.updated_at).getTime() : Date.now(),
   };
@@ -50,16 +55,116 @@ function mapUserPatchToRow(id: string, patch: any) {
   setIfDefined('weight', patch.weight);
   setIfDefined('blood_group', patch.bloodGroup);
   setIfDefined('blood_pressure', patch.bloodPressure);
+  setIfDefined('pulse', patch.pulse);
   setIfDefined('chronic_diseases', patch.chronicDiseases);
   setIfDefined('allergies', patch.allergies);
+  setIfDefined('subscription', patch.subscription);
+  setIfDefined('expires_at', patch.expiresAt);
+  setIfDefined('trial_used', patch.trialUsed);
   setIfDefined('daily_request_count', patch.dailyRequestCount);
   setIfDefined('last_request_date', patch.lastRequestDate);
   setIfDefined('is_blocked', patch.isBlocked);
+  setIfDefined('role', patch.role);
   if (patch.createdAt !== undefined) {
     const dt = typeof patch.createdAt === 'number' ? new Date(patch.createdAt) : new Date(String(patch.createdAt));
     if (!isNaN(dt.getTime())) row.created_at = dt.toISOString();
   }
   return row;
+}
+
+function mapClinicRow(row: any) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    address: row.address,
+    phone: row.phone,
+    services: row.services,
+    photoUrl: row.photo_url,
+    description: row.description,
+    workingHours: row.working_hours,
+    locationUrl: row.location_url,
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+  };
+}
+
+function mapDoctorRow(row: any) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    clinicId: row.clinic_id,
+    name: row.name,
+    specialty: row.specialty,
+    phone: row.phone,
+    photoUrl: row.photo_url,
+    experience: row.experience,
+    education: row.education,
+    bio: row.bio,
+    availability: row.availability,
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+  };
+}
+
+function mapPaymentRequestRow(row: any) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    userDisplayName: row.user_display_name,
+    planName: row.plan_name,
+    amount: row.amount,
+    payerName: row.payer_name,
+    screenshotBase64: row.screenshot_base64,
+    status: row.status,
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+    reviewedAt: row.reviewed_at ? new Date(row.reviewed_at).getTime() : undefined,
+  };
+}
+
+function mapNotificationRow(row: any) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    title: row.title,
+    message: row.message,
+    isRead: Boolean(row.is_read),
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+  };
+}
+
+function mapMedicineLogRow(row: any) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    reminderId: row.reminder_id,
+    medicineName: row.medicine_name,
+    takenAt: row.taken_at ? new Date(row.taken_at).getTime() : Date.now(),
+  };
+}
+
+function mapChatHistoryRow(row: any) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    expertId: row.expert_id,
+    role: row.role,
+    content: row.content,
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+  };
+}
+
+function mapUserActivityRow(row: any) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    activityType: row.activity_type,
+    details: row.details,
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+  };
 }
 
 function mapReminderRow(row: any) {
@@ -115,7 +220,7 @@ async function startServer() {
           .maybeSingle();
 
         if (existingUser) {
-          const welcomeBackMessage = `Sihat AI ga qaytganingizdan xursandmiz!\n\nIlovani ochib sog'lig'ingizni kuzatishda davom eting.`;
+          const welcomeBackMessage = `*Sihat AI ga qaytganingizdan xursandmiz!*\n\nIlovani ochib sog'lig'ingizni kuzatishda davom eting.`;
           const appUrl = process.env.APP_URL || 'https://your-public-url.com';
           
           await botInstance!.sendMessage(msg.chat.id, welcomeBackMessage, {
@@ -192,7 +297,7 @@ async function startServer() {
       });
 
       // Ikkinchi xabar: Xush kelibsiz va tugma
-      const welcomeMessage = `*Sihat AI ga xush kelibsiz!*\nIlovani ochib sog'lig'ingizni kuzatishni boshlang.`;
+      const welcomeMessage = `*Sihat AI ga xush kelibsiz!*\n\nIlovani ochib sog'lig'ingizni kuzatishni boshlang.`;
       await botInstance!.sendMessage(chatId, welcomeMessage, {
         parse_mode: 'Markdown',
         reply_markup: {
@@ -201,7 +306,7 @@ async function startServer() {
       });
     } catch (err) {
       // Fallback message if DB fails
-      await botInstance!.sendMessage(chatId, `*Sihat AI ga xush kelibsiz!*\nIlovani ochib davom eting.`, {
+      await botInstance!.sendMessage(chatId, `*Sihat AI ga xush kelibsiz!*\n\nIlovani ochib davom eting.`, {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [[{ text: '🩺 Sihat Ai ni ochish', web_app: { url: appUrl } }]]
@@ -299,6 +404,100 @@ async function startServer() {
       const { error } = await getSupabaseAdmin().from('reminders').delete().eq('id', req.params.id);
       if (error) throw error;
       res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Clinics
+  app.get('/api/clinics', async (_req, res) => {
+    try {
+      const { data, error } = await getSupabaseAdmin().from('clinics').select('*').order('name');
+      if (error) throw error;
+      res.json((data || []).map(mapClinicRow));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Doctors
+  app.get('/api/doctors', async (req, res) => {
+    try {
+      const clinicId = req.query.clinicId as string;
+      let query = getSupabaseAdmin().from('doctors').select('*');
+      if (clinicId) query = query.eq('clinic_id', clinicId);
+      const { data, error } = await query.order('name');
+      if (error) throw error;
+      res.json((data || []).map(mapDoctorRow));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Payment Requests
+  app.post('/api/payment-requests', async (req, res) => {
+    try {
+      const { data, error } = await getSupabaseAdmin().from('payment_requests').insert({
+        user_id: req.body.userId,
+        user_display_name: req.body.userDisplayName,
+        plan_name: req.body.planName,
+        amount: req.body.amount,
+        payer_name: req.body.payerName,
+        screenshot_base64: req.body.screenshotBase64,
+        status: 'pending'
+      }).select('*').maybeSingle();
+      if (error) throw error;
+      res.json({ success: true, request: mapPaymentRequestRow(data) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Notifications
+  app.get('/api/notifications', async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      const { data, error } = await getSupabaseAdmin().from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+      if (error) throw error;
+      res.json((data || []).map(mapNotificationRow));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Medicine Logs
+  app.get('/api/medicine-logs', async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      const { data, error } = await getSupabaseAdmin().from('medicine_logs').select('*').eq('user_id', userId).order('taken_at', { ascending: false });
+      if (error) throw error;
+      res.json((data || []).map(mapMedicineLogRow));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Chat History
+  app.get('/api/chat-history', async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      const { data, error } = await getSupabaseAdmin().from('chat_history').select('*').eq('user_id', userId).order('created_at', { ascending: true });
+      if (error) throw error;
+      res.json((data || []).map(mapChatHistoryRow));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // System Settings
+  app.get('/api/settings', async (_req, res) => {
+    try {
+      const { data, error } = await getSupabaseAdmin().from('system_settings').select('*').eq('id', 'global').maybeSingle();
+      if (error) throw error;
+      res.json(data?.data || {});
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }

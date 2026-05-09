@@ -89,7 +89,7 @@ const ReminderChecker = () => {
           fetch('/api/send-notification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chatId: user.telegramId, message }),
+            body: JSON.stringify({ chatId: user.uid, message }),
           });
         }
       }
@@ -290,7 +290,6 @@ export default function App() {
         // Map to internal User type
         const userData: User = {
           ...profile,
-          telegramId: tgUserId,
           username: (profile as any).username || effectiveTgUser?.username || undefined,
           displayName: !isPlaceholderName(profile.displayName)
             ? profile.displayName!
@@ -299,7 +298,7 @@ export default function App() {
           dailyRequestCount: (profile as any).dailyRequestCount || 0,
           lastRequestDate: (profile as any).lastRequestDate || new Date().toISOString().split('T')[0],
           isBlocked: (profile as any).isBlocked || false,
-          createdAt: new Date(profile.createdAt),
+          createdAt: typeof profile.createdAt === 'number' ? profile.createdAt : new Date(profile.createdAt).getTime(),
           gender: profile.gender || '',
           age: profile.age || 0,
           weight: profile.weight || 0,
@@ -312,7 +311,6 @@ export default function App() {
         // Keep app usable even if profile backend is temporarily unavailable.
         const fallbackUser: User = {
           uid: tgUserId,
-          telegramId: tgUserId,
           displayName: fallbackDisplayName,
           username: effectiveTgUser?.username || undefined,
           photoURL: effectiveTgUser?.photo_url || '',
@@ -320,7 +318,7 @@ export default function App() {
           dailyRequestCount: 0,
           lastRequestDate: new Date().toISOString().split('T')[0],
           isBlocked: false,
-          createdAt: new Date(),
+          createdAt: Date.now(),
         };
         setUser(fallbackUser);
         localStorage.setItem(`user_profile_${tgUserId}`, JSON.stringify(fallbackUser));

@@ -97,20 +97,12 @@ export default function Registration() {
         height: Number(formData.height),
       };
       await userService.updateProfile(user.uid, patch as any);
-      const updatedUser = { ...user, ...patch };
-      
-      // Update local state and storage
+      const updatedUser: any = { ...user, ...patch };
       setUser(updatedUser);
-      localStorage.setItem(`user_profile_${user.uid}`, JSON.stringify(updatedUser));
-      
-      tg?.HapticFeedback?.notificationOccurred('success');
-      
-      // Explicitly navigate to home after successful save
-      setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 500);
-    } catch (e) {
-      alert("Saqlashda xatolik bo'ldi. Qayta urinib ko'ring.");
+      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+      setCurrentStep(5);
+    } catch (err) {
+      console.error("Update failed:", err);
     } finally {
       setSaving(false);
     }
@@ -119,11 +111,13 @@ export default function Registration() {
   const nextStep = async () => {
     if (saving || isInvalid) return;
     
-    if (currentStep < STEPS.length - 1) {
+    if (currentStep === 4) {
+      await saveProfile();
+    } else if (currentStep === 5) {
+      navigate('/', { replace: true });
+    } else {
       setDirection(1);
       setCurrentStep((s) => s + 1);
-    } else {
-      await saveProfile();
     }
   };
 

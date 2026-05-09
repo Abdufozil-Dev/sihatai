@@ -8,7 +8,8 @@ import {
 import { cn } from '../lib/utils';
 import CustomModal from '../components/CustomModal';
 
-import { userService, UserProfile } from '../services/userService';
+import { userService } from '../services/userService';
+import { User as UserProfile } from '../types';
 
 const tg = window.Telegram?.WebApp;
 
@@ -201,7 +202,7 @@ export default function Profile() {
         </div>
         <h2 className="text-[30px] font-semibold text-[#0F172A] mb-0.5">{user.displayName || user.username || 'Foydalanuvchi'}</h2>
         <p className="text-slate-400 font-medium text-lg mb-4">
-          {user.username ? `@${user.username}` : user.email || `ID: ${user.telegramId}`}
+          {user.username ? `@${user.username}` : user.email || `ID: ${user.uid}`}
         </p>
         <button className="px-7 py-2 rounded-full border border-slate-100 font-semibold text-[#0F172A] text-[11px] uppercase tracking-[0.12em] active:scale-95 transition-all">
           ASOSIY TARIF
@@ -243,6 +244,20 @@ export default function Profile() {
             value={profile.age?.toString() || 'Kiritilmagan'} 
             colorClass="bg-indigo-50 text-indigo-500" 
             onClick={() => openEditModal('age', 'YOSH', 'number')}
+          />
+          <IndicatorCard 
+            icon={Activity} 
+            label="PULS" 
+            value={profile.pulse || 'Kiritilmagan'} 
+            colorClass="bg-amber-50 text-amber-500" 
+            onClick={() => openEditModal('pulse' as any, 'PULS')}
+          />
+          <IndicatorCard 
+            icon={ShieldCheck} 
+            label="QON GURUHI" 
+            value={profile.bloodGroup || 'Kiritilmagan'} 
+            colorClass="bg-violet-50 text-violet-500" 
+            onClick={() => openEditModal('bloodGroup' as any, 'QON GURUHI')}
           />
         </div>
       </div>

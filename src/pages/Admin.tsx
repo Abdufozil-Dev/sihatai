@@ -301,7 +301,7 @@ export default function Admin() {
                           <p className="font-bold text-slate-900 text-sm tracking-tight">{user.displayName}</p>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{user.role}</span>
-                            <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">ID: {user.telegramId}</span>
+                            <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">ID: {user.uid}</span>
                           </div>
                         </div>
                       </div>

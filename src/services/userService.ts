@@ -1,3 +1,5 @@
+import { User } from '../types';
+
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   try {
     const res = await fetch(url, init);
@@ -16,35 +18,21 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
   }
 }
 
-export interface UserProfile {
-  uid: string;
-  displayName: string | null;
-  username?: string | null;
-  email: string | null;
-  photoURL: string | null;
-  phone?: string;
-  gender?: string;
-  age?: number;
-  height?: number;
-  weight?: number;
-  bloodGroup?: string;
-  bloodPressure?: string;
-  chronicDiseases?: string[];
-  allergies?: string[];
-  createdAt: number;
-}
-
 export const userService = {
-  async getProfile(uid: string): Promise<UserProfile | null> {
-    const data = await api<UserProfile | null>(`/api/users/${encodeURIComponent(uid)}`);
+  async getProfile(uid: string): Promise<User | null> {
+    const data = await api<User | null>(`/api/users/${encodeURIComponent(uid)}`);
     return data;
   },
 
-  async updateProfile(uid: string, data: Partial<UserProfile>): Promise<void> {
+  async updateProfile(uid: string, data: Partial<User>): Promise<void> {
     await api<{ success: true }>(`/api/users/${encodeURIComponent(uid)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
+  },
+
+  async getSettings(): Promise<any> {
+    return await api<any>('/api/settings');
   }
 };
