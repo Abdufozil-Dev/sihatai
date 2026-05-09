@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../context/AuthContext';
 import { GoogleGenAI } from '@google/genai';
+import { medicalService } from '../services/medicalService';
 
 import { Clinic, Reminder, Settings } from '../types';
 
@@ -368,16 +369,42 @@ export default function Consultation() {
     );
   }
 
-  const handleSelectExpert = (expert: Expert) => {
+  const handleSelectExpert = async (expert: Expert) => {
     if (tg?.HapticFeedback) {
       tg.HapticFeedback.impactOccurred('medium');
     }
     setSelectedExpert(expert);
-    setMessages([{
-      role: 'assistant',
-      content: expert.welcomeMessage,
-      timestamp: new Date()
-    }]);
+    setMessages([]); // Tozalamiz, keyin yuklaymiz
+    setIsTyping(true);
+
+    try {
+      if (user?.uid) {
+        const history = await medicalService.getChatHistory(user.uid, expert.id);
+        if (history && history.length > 0) {
+          const mappedMessages: Message[] = history.map(h => ({
+            role: h.role as 'user' | 'assistant',
+            content: h.content,
+            timestamp: new Date(h.createdAt)
+          }));
+          setMessages(mappedMessages);
+        } else {
+          setMessages([{
+            role: 'assistant',
+            content: expert.welcomeMessage,
+            timestamp: new Date()
+          }]);
+        }
+      }
+    } catch (err) {
+      console.error("Load history failed:", err);
+      setMessages([{
+        role: 'assistant',
+        content: expert.welcomeMessage,
+        timestamp: new Date()
+      }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -403,44 +430,36 @@ export default function Consultation() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = input;
     setInput('');
     setIsTyping(true);
 
     try {
+      // Save user message to DB
+      await medicalService.saveChatMessage({
+        userId: user.uid,
+        expertId: selectedExpert.id,
+        role: 'user',
+        content: currentInput
+      });
+
       const fullPrompt = `${settings?.aiSystemPrompt || ''}\n\n${selectedExpert.systemPrompt}`;
       
       const ai = new GoogleGenAI({ apiKey: (process.env as any).GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: [{ role: 'user', parts: [{ text: `${fullPrompt}\n\nUser says: ${input}` }] }],
+        contents: [{ role: 'user', parts: [{ text: `${fullPrompt}\n\nUser says: ${currentInput}` }] }],
       });
       
       const aiResponseText = response.text || '';
       
-      // Detect if user is confirming a time
-      const timeMatch = input.match(/(\d{2}:\d{2})/);
-      if (timeMatch && messages.some(m => m.role === 'assistant' && m.content.toLowerCase().includes('bron'))) {
-        const time = timeMatch[1];
-        const reminder: Reminder = {
-          id: Date.now().toString(),
-          userId: tg?.initDataUnsafe?.user?.id?.toString() || 'demo',
-          title: `Shifokor qabuli (${time})`,
-          time: time,
-          days: ['Dushanba'], // Default or derived
-          isActive: true
-        };
-        const savedReminders = JSON.parse(localStorage.getItem('reminders') || '[]');
-        localStorage.setItem('reminders', JSON.stringify([...savedReminders, reminder]));
-        
-        // Simulate SMS
-        setTimeout(() => {
-          if (tg?.showConfirm) {
-            tg.showConfirm(`SMS yuborildi: Sizning qabulingiz ${time} ga muvaffaqiyatli belgilandi.`);
-          } else {
-            alert(`SMS yuborildi: Sizning qabulingiz ${time} ga muvaffaqiyatli belgilandi.`);
-          }
-        }, 1500);
-      }
+      // Save AI response to DB
+      await medicalService.saveChatMessage({
+        userId: user.uid,
+        expertId: selectedExpert.id,
+        role: 'assistant',
+        content: aiResponseText
+      });
 
       const assistantMessage: Message = {
         role: 'assistant',

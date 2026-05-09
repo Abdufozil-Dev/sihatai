@@ -483,10 +483,35 @@ async function startServer() {
   app.get('/api/chat-history', async (req, res) => {
     try {
       const userId = req.query.userId as string;
+      const expertId = req.query.expertId as string;
       if (!userId) return res.status(400).json({ error: 'userId required' });
-      const { data, error } = await getSupabaseAdmin().from('chat_history').select('*').eq('user_id', userId).order('created_at', { ascending: true });
+      
+      let query = getSupabaseAdmin().from('chat_history').select('*').eq('user_id', userId);
+      if (expertId) query = query.eq('expert_id', expertId);
+      
+      const { data, error } = await query.order('created_at', { ascending: true });
       if (error) throw error;
       res.json((data || []).map(mapChatHistoryRow));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/chat-history', async (req, res) => {
+    try {
+      const { userId, expertId, role, content } = req.body;
+      if (!userId || !expertId || !role || !content) return res.status(400).json({ error: 'Missing fields' });
+      
+      const { data, error } = await getSupabaseAdmin().from('chat_history').insert({
+        user_id: userId,
+        expert_id: expertId,
+        role: role,
+        content: content,
+        created_at: new Date().toISOString()
+      }).select('*').maybeSingle();
+      
+      if (error) throw error;
+      res.json({ success: true, message: mapChatHistoryRow(data) });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }

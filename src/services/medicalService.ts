@@ -37,7 +37,16 @@ export const medicalService = {
     return await api<Notification[]>(`/api/notifications?userId=${encodeURIComponent(userId)}`);
   },
 
-  async getChatHistory(userId: string): Promise<any[]> {
-    return await api<any[]>(`/api/chat-history?userId=${encodeURIComponent(userId)}`);
+  async getChatHistory(userId: string, expertId?: string): Promise<any[]> {
+    const url = expertId ? `/api/chat-history?userId=${encodeURIComponent(userId)}&expertId=${encodeURIComponent(expertId)}` : `/api/chat-history?userId=${encodeURIComponent(userId)}`;
+    return await api<any[]>(url);
+  },
+
+  async saveChatMessage(data: { userId: string; expertId: string; role: string; content: string }): Promise<any> {
+    return await api<any>('/api/chat-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
   }
 };
