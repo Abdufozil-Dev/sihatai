@@ -104,6 +104,32 @@ async function startServer() {
 
   botInstance.on('message', async (msg) => {
     if (msg.text?.trim() === '/start') {
+      const userId = String(msg.from?.id);
+      const supabase = getSupabaseAdmin();
+
+      try {
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (existingUser) {
+          const welcomeBackMessage = `Sihat AI ga qaytganingizdan xursandmiz!\n\nIlovani ochib sog'lig'ingizni kuzatishda davom eting.`;
+          const appUrl = process.env.APP_URL || 'https://your-public-url.com';
+          
+          await botInstance!.sendMessage(msg.chat.id, welcomeBackMessage, {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [[{ text: '🩺 Sihat Ai ni ochish', web_app: { url: appUrl } }]]
+            }
+          });
+          return;
+        }
+      } catch (err) {
+        // User not found or DB error, continue to registration
+      }
+
       const fullName = `${msg.from?.first_name || ''} ${msg.from?.last_name || ''}`.trim() || 'Foydalanuvchi';
       const welcomeMessage = `🩺 *Sihat AI ga xush kelibsiz!*\n\nIsmingizni yozing yoki quyidagi tugmani bosing\n(hozir profilda: ${fullName}).\n\nIsmdan so'ng telefon nomeringizni so'raymiz — shundan keyin ilova ochiladi.`;
       
@@ -166,7 +192,7 @@ async function startServer() {
       });
 
       // Ikkinchi xabar: Xush kelibsiz va tugma
-      const welcomeMessage = `👋 *Sihat AI ga xush kelibsiz!*\nIlovani ochib sog'lig'ingizni kuzatishni boshlang.`;
+      const welcomeMessage = `*Sihat AI ga xush kelibsiz!*\nIlovani ochib sog'lig'ingizni kuzatishni boshlang.`;
       await botInstance!.sendMessage(chatId, welcomeMessage, {
         parse_mode: 'Markdown',
         reply_markup: {
@@ -175,7 +201,7 @@ async function startServer() {
       });
     } catch (err) {
       // Fallback message if DB fails
-      await botInstance!.sendMessage(chatId, `👋 *Sihat AI ga xush kelibsiz!*\nIlovani ochib davom eting.`, {
+      await botInstance!.sendMessage(chatId, `*Sihat AI ga xush kelibsiz!*\nIlovani ochib davom eting.`, {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [[{ text: '🩺 Sihat Ai ni ochish', web_app: { url: appUrl } }]]
