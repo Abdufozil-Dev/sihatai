@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { User, Clinic, Settings, Doctor } from '../types';
-import { Users, MapPin, Settings as SettingsIcon, BarChart3, Shield, Ban, Save, ChevronLeft, Plus, Trash2, Phone, Stethoscope, Megaphone, Send } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { User, Clinic, Settings } from '../types';
+import { Users, MapPin, Settings as SettingsIcon, BarChart3, Ban, Save, ChevronLeft, Plus, Trash2, Stethoscope, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -503,8 +503,9 @@ export default function Admin() {
                   <span>Klinikani saqlash</span>
                 </button>
               </div>
+            </div>
 
-              <h3 className="text-sm font-medium text-slate-400 uppercase tracking-widest ml-2">Mavjud klinikalar va shifokorlar</h3>
+            <h3 className="text-sm font-medium text-slate-400 uppercase tracking-widest ml-2">Mavjud klinikalar va shifokorlar</h3>
               
               <div className="space-y-6">
                 {clinics.map((clinic) => (
@@ -538,7 +539,7 @@ export default function Admin() {
                             selectedClinicId === clinic.id ? "bg-slate-900 text-white" : "bg-white text-slate-400 border border-slate-100"
                           )}
                         >
-                          {selectedClinicId === clinic.id ? 'Yopish' : 'Shifokor qo\\'shish'}
+                          {selectedClinicId === clinic.id ? 'Yopish' : "Shifokor qo'shish"}
                         </button>
                         <button 
                           onClick={() => deleteClinic(clinic.id)}
@@ -548,11 +549,10 @@ export default function Admin() {
                         </button>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Add Doctor Form (Expanded) */}
-                  <AnimatePresence>
-                    {selectedClinicId === clinic.id && (
+                    {/* Add Doctor Form (Expanded) */}
+                    <AnimatePresence>
+                      {selectedClinicId === clinic.id && (
                       <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
@@ -728,9 +728,10 @@ export default function Admin() {
                   <Trash2 size={20} />
                   <span>Barcha ma'lumotlarni o'chirish</span>
                 </button>
-              <p className="text-[10px] text-slate-400 font-medium text-center px-2">
-                Supabase dagi ma&apos;lumotlar o&apos;chmaydi — faqat ushbu qurilmadagi brauzer xotirasi.
-              </p>
+                <p className="text-[10px] text-slate-400 font-medium text-center px-2">
+                  Supabase dagi ma&apos;lumotlar o&apos;chmaydi — faqat ushbu qurilmadagi brauzer xotirasi.
+                </p>
+              </div>
             </div>
           </motion.div>
         )}

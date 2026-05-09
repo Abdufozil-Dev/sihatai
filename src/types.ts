@@ -4,6 +4,7 @@ export interface User {
   displayName: string;
   username?: string;
   photoURL?: string;
+  email?: string;
   role: 'user' | 'admin';
   dailyRequestCount: number;
   lastRequestDate: string;

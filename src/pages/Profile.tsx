@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  User as UserIcon, Activity, Heart, Calendar, Ruler, Weight, ShieldCheck
+  User as UserIcon, Activity, Heart, Calendar, Ruler, Weight
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import CustomModal from '../components/CustomModal';
@@ -16,7 +16,6 @@ const tg = window.Telegram?.WebApp;
 export default function Profile() {
   const { user, setUser } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
     title?: string;
@@ -30,18 +29,17 @@ export default function Profile() {
   const [adminClicks, setAdminClicks] = useState(0);
   const [textInput, setTextInput] = useState('');
   
-  const [profile, setProfile] = useState<Partial<UserProfile>>(user || {});
+  const [profile, setProfile] = useState<Partial<UserProfile>>(user as any || {});
 
   useEffect(() => {
     if (user) {
-      setProfile(user);
+      setProfile(user as any);
       activityService.logPageView(user.uid, 'Profile');
     }
   }, [user]);
 
   const updateField = async (field: keyof UserProfile, value: any) => {
     if (!user?.uid) return;
-    setLoading(true);
     try {
       activityService.logButtonClick(user.uid, `update_profile_${field}`, { value });
       const updatedData = { [field]: value };
@@ -53,7 +51,6 @@ export default function Profile() {
     } catch (err) {
       console.error("Update failed:", err);
     } finally {
-      setLoading(false);
       setModalConfig(prev => ({ ...prev, isOpen: false }));
       setTextInput('');
     }
