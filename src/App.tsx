@@ -29,11 +29,6 @@ const adminIdsFromEnv = String((import.meta as any).env?.VITE_ADMIN_IDS || '')
   .filter(Boolean);
 const ADMIN_IDS = new Set(['6413273899', '7820708813', ...adminIdsFromEnv]);
 
-const isPlaceholderName = (value?: string | null) => {
-  const normalized = (value || '').trim().toLowerCase();
-  return !normalized || normalized === "noma'lum" || normalized === 'nomalum' || normalized === 'foydalanuvchi';
-};
-
 const isRegistrationComplete = (user: User | null) => {
   if (!user) return false;
   const displayName = (user.displayName || '').trim().toLowerCase();
@@ -74,13 +69,13 @@ const ReminderChecker = () => {
 
         // Notify 30 minutes before
         if (diffMins === 30) {
-          const message = `🔔 <b>Eslatma:</b> 30 daqiqadan so'ng sizda tadbir bor: <i>${reminder.title}</i>\n\nIltimos, tayyor bo'ling!`;
+          const message = `🔔 <b>Eslatma:</b> 30 daqiqadan so'ng sizda tadbir bor: <i>${reminder.medicineName}</i>\n\nIltimos, tayyor bo'ling!`;
           
           // Show in Mini App
           if (tg?.showPopup) {
             tg.showPopup({
               title: 'Eslatma',
-              message: `${reminder.title} ga 30 daqiqa qoldi!`,
+              message: `${reminder.medicineName} ga 30 daqiqa qoldi!`,
               buttons: [{ type: 'ok' }]
             });
           }

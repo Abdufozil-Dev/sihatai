@@ -53,11 +53,12 @@ export interface Clinic {
   name: string;
   address: string;
   phone?: string;
-  services?: string[];
+  services: string[];
   photoUrl?: string;
   description?: string;
   workingHours?: string;
   locationUrl?: string;
+  doctors?: Doctor[];
   createdAt: number;
 }
 

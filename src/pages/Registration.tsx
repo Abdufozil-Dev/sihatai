@@ -97,7 +97,17 @@ export default function Registration() {
         height: Number(formData.height),
       };
       await userService.updateProfile(user.uid, patch as any);
-      const updatedUser: any = { ...user, ...patch };
+      const updatedUser: User = { 
+        ...user, 
+        ...patch,
+        role: user.role || 'user',
+        createdAt: typeof user.createdAt === 'number' ? user.createdAt : Date.now(),
+        dailyRequestCount: user.dailyRequestCount || 0,
+        lastRequestDate: user.lastRequestDate || new Date().toISOString().split('T')[0],
+        subscription: user.subscription || 'none',
+        trialUsed: user.trialUsed || false,
+        isBlocked: user.isBlocked || false,
+      } as User;
       setUser(updatedUser);
       if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
       setCurrentStep(5);

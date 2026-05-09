@@ -13,10 +13,10 @@ const MOCK_CLINICS: Clinic[] = [
     phone: "+998 71 214-90-41",
     services: ["Kardiologiya", "Nevrologiya", "Xirurgiya"],
     doctors: [
-      { id: 'd1', name: "Dr. Alisher Karimov", specialty: "Kardiolog", clinicId: '1', phone: '+998 90 123-45-67', availability: ['09:00', '10:00', '11:00'] },
-      { id: 'd2', name: "Dr. Nigora Ahmedova", specialty: "Nevrolog", clinicId: '1', phone: '+998 90 765-43-21', availability: ['14:00', '15:00', '16:00'] }
+      { id: 'd1', name: "Dr. Alisher Karimov", specialty: "Kardiolog", clinicId: '1', phone: '+998 90 123-45-67', availability: ['09:00', '10:00', '11:00'], createdAt: Date.now() },
+      { id: 'd2', name: "Dr. Nigora Ahmedova", specialty: "Nevrolog", clinicId: '1', phone: '+998 90 765-43-21', availability: ['14:00', '15:00', '16:00'], createdAt: Date.now() }
     ],
-    createdAt: new Date() as any
+    createdAt: Date.now()
   },
   {
     id: '2',
@@ -25,11 +25,11 @@ const MOCK_CLINICS: Clinic[] = [
     phone: "+998 71 203-30-03",
     services: ["Diagnostika", "Pediatriya", "Stomatologiya", "Oftalmologiya"],
     doctors: [
-      { id: 'd3', name: "Dr. Jasur Umarov", specialty: "Pediatr", clinicId: '2', phone: '+998 93 111-22-33' },
-      { id: 'd4', name: "Dr. Malika Saidova", specialty: "Stomatolog", clinicId: '2', phone: '+998 93 444-55-66' },
-      { id: 'd5', name: "Dr. Rustam G'ofurov", specialty: "Oftalmolog", clinicId: '2', phone: '+998 93 777-88-99' }
+      { id: 'd3', name: "Dr. Jasur Umarov", specialty: "Pediatr", clinicId: '2', phone: '+998 93 111-22-33', createdAt: Date.now() },
+      { id: 'd4', name: "Dr. Malika Saidova", specialty: "Stomatolog", clinicId: '2', phone: '+998 93 444-55-66', createdAt: Date.now() },
+      { id: 'd5', name: "Dr. Rustam G'ofurov", specialty: "Oftalmolog", clinicId: '2', phone: '+998 93 777-88-99', createdAt: Date.now() }
     ],
-    createdAt: new Date() as any
+    createdAt: Date.now()
   },
   {
     id: '3',
@@ -38,10 +38,10 @@ const MOCK_CLINICS: Clinic[] = [
     phone: "+998 71 202-02-02",
     services: ["Ginekologiya", "Urologiya", "Dermatologiya"],
     doctors: [
-      { id: 'd6', name: "Dr. Azizbek Tursunov", specialty: "Dermatolog", clinicId: '3', phone: '+998 94 555-66-77' },
-      { id: 'd7', name: "Dr. Shahlo Karimova", specialty: "Ginekolog", clinicId: '3', phone: '+998 94 888-99-00' }
+      { id: 'd6', name: "Dr. Azizbek Tursunov", specialty: "Dermatolog", clinicId: '3', phone: '+998 94 555-66-77', createdAt: Date.now() },
+      { id: 'd7', name: "Dr. Shahlo Karimova", specialty: "Ginekolog", clinicId: '3', phone: '+998 94 888-99-00', createdAt: Date.now() }
     ],
-    createdAt: new Date() as any
+    createdAt: Date.now()
   }
 ];
 
@@ -253,7 +253,7 @@ export default function Clinics() {
             <div className="space-y-4">
               <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-2">Shifokorlar</h3>
               <div className="space-y-4">
-                {selectedClinic.doctors.map((doctor) => (
+                {selectedClinic.doctors?.map((doctor) => (
                   <div key={doctor.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 flex items-center justify-between group hover:border-emerald-100 transition-all">
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">

@@ -19,12 +19,7 @@ export default function Admin() {
   const [settings, setSettings] = useState<Settings>({
     aiSystemPrompt: "Siz malakali tibbiy yordamchisiz. Foydalanuvchi simptomlarini tahlil qiling va ehtimoliy sabablarni ayting. MUHIM: Har doim shifokorga murojaat qilishni tavsiya eting.",
     basicLimit: 5,
-    proLimit: 20,
-    doctorSectionTitle: "HAQIQIY SHIFOKOR",
-    doctorSectionDescription: "Sun'iy intellekt yordami yetarli bo'lmasa yoki sizga chuqurroq tibbiy tahlil kerak bo'lsa, bizning malakali va ko'p yillik tajribaga ega shifokorlarimiz bilan bog'laning.",
-    doctorSectionTags: ['Professional tahlil', 'Individual yondashuv', '24/7 Aloqa'],
-    doctorSectionIcon: "https://emojicdn.elk.sh/👩‍⚕️?style=apple",
-    doctorAssignments: []
+    proLimit: 20
   });
 
   const [loading, setLoading] = useState(false);
@@ -75,8 +70,7 @@ export default function Admin() {
       address: newClinic.address,
       phone: newClinic.phone,
       services: newClinic.services.split(',').map(s => s.trim()),
-      doctors: [],
-      createdAt: new Date()
+      createdAt: Date.now()
     };
     
     const updatedClinics = [...clinics, clinic];
@@ -120,13 +114,15 @@ export default function Admin() {
     }).catch(() => {});
   };
 
+  const [broadcastText, setBroadcastText] = useState('');
+
   const saveSettings = () => {
     if (tg?.HapticFeedback) {
       tg.HapticFeedback.notificationOccurred('success');
     }
     localStorage.setItem('admin_settings', JSON.stringify(settings));
-    if (settings.broadcast) {
-      localStorage.setItem('admin_broadcast', JSON.stringify({ text: settings.broadcast }));
+    if (broadcastText) {
+      localStorage.setItem('admin_broadcast', JSON.stringify({ text: broadcastText }));
       // Dispatch storage event manually for the same window
       window.dispatchEvent(new Event('storage'));
     } else {
@@ -155,7 +151,7 @@ export default function Admin() {
       d.setDate(now.getDate() - i);
       const dayName = days[d.getDay()];
       const count = users.filter(u => {
-        const regDate = new Date(u.createdAt);
+        const regDate = new Date(u.createdAt || 0);
         return regDate.toDateString() === d.toDateString();
       }).length;
       data.push({ name: dayName, users: count, requests: count * 12 });
@@ -409,8 +405,8 @@ export default function Admin() {
               <label className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-2">E'lon (Broadcast)</label>
               <input
                 type="text"
-                value={settings?.broadcast || ''}
-                onChange={(e) => setSettings({ ...settings!, broadcast: e.target.value })}
+                value={broadcastText}
+                onChange={(e) => setBroadcastText(e.target.value)}
                 placeholder="Yangi e'lon matni..."
                 className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none font-medium text-slate-900"
               />
