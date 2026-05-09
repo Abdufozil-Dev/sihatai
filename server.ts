@@ -24,11 +24,13 @@ function mapUserRowToProfile(row: any) {
     weight: row.weight ?? undefined,
     bloodGroup: row.blood_group ?? undefined,
     bloodPressure: row.blood_pressure ?? undefined,
+    pulse: row.pulse ?? undefined,
     chronicDiseases: row.chronic_diseases ?? undefined,
     allergies: row.allergies ?? undefined,
     dailyRequestCount: Number(row.daily_request_count ?? 0),
     lastRequestDate: row.last_request_date ?? new Date().toISOString().split('T')[0],
     isBlocked: Boolean(row.is_blocked ?? false),
+    role: row.role ?? 'user',
     createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
     updatedAt: row.updated_at ? new Date(row.updated_at).getTime() : Date.now(),
   };
@@ -50,11 +52,13 @@ function mapUserPatchToRow(id: string, patch: any) {
   setIfDefined('weight', patch.weight);
   setIfDefined('blood_group', patch.bloodGroup);
   setIfDefined('blood_pressure', patch.bloodPressure);
+  setIfDefined('pulse', patch.pulse);
   setIfDefined('chronic_diseases', patch.chronicDiseases);
   setIfDefined('allergies', patch.allergies);
   setIfDefined('daily_request_count', patch.dailyRequestCount);
   setIfDefined('last_request_date', patch.lastRequestDate);
   setIfDefined('is_blocked', patch.isBlocked);
+  setIfDefined('role', patch.role);
   if (patch.createdAt !== undefined) {
     const dt = typeof patch.createdAt === 'number' ? new Date(patch.createdAt) : new Date(String(patch.createdAt));
     if (!isNaN(dt.getTime())) row.created_at = dt.toISOString();
@@ -508,6 +512,152 @@ async function startServer() {
 
       if (error) throw error;
       res.json({ success: true, log: data });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // --- Chat History API ---
+  app.get('/api/chat-history', async (req, res) => {
+    try {
+      const { userId, expertId } = req.query;
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      
+      let query = getSupabaseAdmin()
+        .from('chat_history')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
+      
+      if (expertId) {
+        query = query.eq('expert_id', expertId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      res.json(data || []);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/chat-history', async (req, res) => {
+    try {
+      const { userId, expertId, role, content } = req.body;
+      if (!userId || !expertId || !role || !content) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const { data, error } = await getSupabaseAdmin()
+        .from('chat_history')
+        .insert({
+          user_id: userId,
+          expert_id: expertId,
+          role,
+          content,
+          created_at: new Date().toISOString()
+        })
+        .select('*')
+        .maybeSingle();
+
+      if (error) throw error;
+      res.json({ success: true, chat: data });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // --- User Activities API ---
+  app.post('/api/user-activities', async (req, res) => {
+    try {
+      const { userId, activityType, details } = req.body;
+      if (!userId || !activityType) {
+        return res.status(400).json({ error: 'userId and activityType required' });
+      }
+
+      const { data, error } = await getSupabaseAdmin()
+        .from('user_activities')
+        .insert({
+          user_id: userId,
+          activity_type: activityType,
+          details: details || {},
+          created_at: new Date().toISOString()
+        })
+        .select('*')
+        .maybeSingle();
+
+      if (error) throw error;
+      res.json({ success: true, activity: data });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // --- Clinics API ---
+  app.get('/api/clinics', async (_req, res) => {
+    try {
+      const { data, error } = await getSupabaseAdmin()
+        .from('clinics')
+        .select('*, doctors(*)');
+      if (error) throw error;
+      res.json(data || []);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/clinics', async (req, res) => {
+    try {
+      const { name, address, phone, services } = req.body;
+      const { data, error } = await getSupabaseAdmin()
+        .from('clinics')
+        .insert({ name, address, phone, services })
+        .select('*')
+        .maybeSingle();
+      if (error) throw error;
+      res.json(data);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete('/api/clinics/:id', async (req, res) => {
+    try {
+      const { error } = await getSupabaseAdmin()
+        .from('clinics')
+        .delete()
+        .eq('id', req.params.id);
+      if (error) throw error;
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // --- Settings API ---
+  app.get('/api/settings', async (_req, res) => {
+    try {
+      const { data, error } = await getSupabaseAdmin()
+        .from('system_settings')
+        .select('data')
+        .eq('id', 'global')
+        .maybeSingle();
+      if (error) throw error;
+      res.json(data?.data || {});
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/settings', async (req, res) => {
+    try {
+      const { data, error } = await getSupabaseAdmin()
+        .from('system_settings')
+        .upsert({ id: 'global', data: req.body, updated_at: new Date().toISOString() })
+        .select('data')
+        .maybeSingle();
+      if (error) throw error;
+      res.json(data?.data || {});
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }

@@ -17,6 +17,8 @@ import { useNavigate } from 'react-router-dom';
 import { cn, isPlaceholderName } from '../lib/utils';
 import CustomModal from '../components/CustomModal';
 import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
+import { activityService } from '../services/activityService';
+import { userService } from '../services/userService';
 
 const tg = window.Telegram?.WebApp;
 
@@ -79,7 +81,7 @@ const healthTipsData = [
 ];
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
   const [greeting, setGreeting] = useState('');
   const keyboardHeight = useKeyboardHeight();
@@ -89,7 +91,11 @@ export default function Home() {
     if (hour < 12) setGreeting('Xayrli tong');
     else if (hour < 18) setGreeting('Xayrli kun');
     else setGreeting('Xayrli kech');
-  }, []);
+
+    if (user?.uid) {
+      activityService.logPageView(user.uid, 'Home');
+    }
+  }, [user?.uid]);
 
   const [modalType, setModalType] = useState<'meal' | 'weight' | 'health' | 'notification' | 'notifications_list' | null>(null);
   const [notificationMsg, setNotificationMsg] = useState('');
@@ -139,6 +145,9 @@ export default function Home() {
       tg.HapticFeedback.impactOccurred('medium');
     }
     setModalType('notifications_list');
+    if (user?.uid) {
+      activityService.logButtonClick(user.uid, 'notifications_bell');
+    }
   };
 
   const markAsTaken = async (n: AppNotification) => {
@@ -146,6 +155,9 @@ export default function Home() {
     if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     
     try {
+      // Log activity
+      activityService.logButtonClick(user.uid, 'mark_medicine_taken', { notificationId: n.id });
+      
       // Dori nomini xabardan ajratib olishga harakat qilamiz (agar dori eslatmasi bo'lsa)
       // Bizning xabarimiz: "${r.medicine_name} ni ichib oling siz uchun bu muhim"
       const medicineName = n.message.split(' ni ichib oling')[0] || 'Dori';
@@ -167,6 +179,7 @@ export default function Home() {
   const markAllAsRead = async () => {
     if (!user?.uid) return;
     try {
+      activityService.logButtonClick(user.uid, 'mark_all_notifications_read');
       const unread = notifications.filter(n => !n.isRead);
       await Promise.all(unread.map(n => notificationService.markAsRead(n.id)));
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
@@ -187,6 +200,9 @@ export default function Home() {
   const handleNavigate = (path: string) => {
     if (tg?.HapticFeedback) {
       tg.HapticFeedback.impactOccurred('light');
+    }
+    if (user?.uid) {
+      activityService.logButtonClick(user.uid, `navigate_to_${path.replace('/', '')}`);
     }
     navigate(path);
   };
@@ -221,6 +237,9 @@ export default function Home() {
   const handleShowMealPlan = () => {
     if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     setModalType('meal');
+    if (user?.uid) {
+      activityService.logButtonClick(user.uid, 'view_meal_plan');
+    }
   };
 
   const calculateBMI = () => {
@@ -241,11 +260,17 @@ export default function Home() {
   const handleLogWeight = () => {
     if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     setModalType('weight');
+    if (user?.uid) {
+      activityService.logButtonClick(user.uid, 'open_weight_modal');
+    }
   };
 
   const handleLogHealth = () => {
     if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     setModalType('health');
+    if (user?.uid) {
+      activityService.logButtonClick(user.uid, 'open_health_modal');
+    }
   };
 
   const handleSaveWeight = async () => {
@@ -255,12 +280,25 @@ export default function Home() {
     }
 
     try {
+      if (user?.uid) {
+        activityService.logButtonClick(user.uid, 'save_weight', { weight, height });
+        
+        // Save to server
+        const updatedUser = await userService.updateProfile(user.uid, {
+          weight: parseFloat(weight),
+          height: parseFloat(height)
+        });
+        if (updatedUser) setUser(updatedUser);
+      }
+      
       localStorage.setItem('health_weight', weight);
       localStorage.setItem('health_height', height);
       
       setNotificationMsg("Vazn ma'lumotlari saqlandi!");
       setModalType('notification');
+      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } catch (error) {
+      console.error("Error saving weight:", error);
       alert("Ma'lumotlarni saqlashda xatolik yuz berdi.");
     }
   };
@@ -272,6 +310,17 @@ export default function Home() {
     }
 
     try {
+      if (user?.uid) {
+        activityService.logButtonClick(user.uid, 'save_health_data', { bp: healthInput.bp, pulse: healthInput.pulse });
+        
+        // Save to server
+        const updatedUser = await userService.updateProfile(user.uid, {
+          bloodPressure: healthInput.bp,
+          pulse: healthInput.pulse
+        } as any);
+        if (updatedUser) setUser(updatedUser);
+      }
+      
       const newBp = `${healthInput.bp}`;
       setBpPulse(newBp);
       localStorage.setItem('health_bp', newBp);
@@ -279,7 +328,9 @@ export default function Home() {
       
       setNotificationMsg("Salomatlik ma'lumotlari saqlandi!");
       setModalType('notification');
+      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } catch (error) {
+      console.error("Error saving health data:", error);
       alert("Ma'lumotlarni saqlashda xatolik yuz berdi.");
     }
   };

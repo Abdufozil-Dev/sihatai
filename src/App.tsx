@@ -124,7 +124,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans pt-[env(safe-area-inset-top,44px)] pb-[env(safe-area-inset-bottom,20px)]">
       <ReminderChecker />
       {/* Main Content */}
-      <main className={cn("flex-1 max-w-md mx-auto w-full px-6 pt-12", showNav ? "pb-40" : "pb-12")}>
+      <main className={cn("flex-1 max-w-2xl mx-auto w-full px-4 pt-12", showNav ? "pb-40" : "pb-12")}>
         {children}
       </main>
 

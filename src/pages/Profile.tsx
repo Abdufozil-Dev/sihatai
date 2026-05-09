@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import CustomModal from '../components/CustomModal';
+import { activityService } from '../services/activityService';
 
 import { userService, UserProfile } from '../services/userService';
 
@@ -32,13 +33,17 @@ export default function Profile() {
   const [profile, setProfile] = useState<Partial<UserProfile>>(user || {});
 
   useEffect(() => {
-    if (user) setProfile(user);
+    if (user) {
+      setProfile(user);
+      activityService.logPageView(user.uid, 'Profile');
+    }
   }, [user]);
 
   const updateField = async (field: keyof UserProfile, value: any) => {
     if (!user?.uid) return;
     setLoading(true);
     try {
+      activityService.logButtonClick(user.uid, `update_profile_${field}`, { value });
       const updatedData = { [field]: value };
       await userService.updateProfile(user.uid, updatedData);
       const newProfile = { ...profile, ...updatedData };

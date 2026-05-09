@@ -49,16 +49,31 @@ const tg = window.Telegram?.WebApp;
 
 export default function Clinics() {
   const navigate = useNavigate();
-  const [clinics, setClinics] = useState<Clinic[]>(MOCK_CLINICS);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    const savedClinics = localStorage.getItem('clinics');
-    if (savedClinics) {
-      setClinics(JSON.parse(savedClinics));
-    }
+    const fetchClinics = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/clinics');
+        if (response.ok) {
+          const data = await response.json();
+          setClinics(data);
+        } else {
+          // Fallback to mock data if API fails
+          setClinics(MOCK_CLINICS);
+        }
+      } catch (e) {
+        console.error("Fetch clinics error:", e);
+        setClinics(MOCK_CLINICS);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchClinics();
   }, []);
 
   const handleBack = () => {

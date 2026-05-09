@@ -33,26 +33,32 @@ export default function Admin() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch Users from server (Supabase). Fallback: localStorage cache.
+        // Fetch Users from server
         let usersData: User[] = [];
         try {
           const r = await fetch('/api/users');
           if (r.ok) usersData = await r.json();
-        } catch {}
-        if (!usersData.length) {
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key?.startsWith('user_profile_')) {
-              usersData.push(JSON.parse(localStorage.getItem(key)!));
-            }
-          }
+        } catch (e) {
+          console.error("Fetch users error:", e);
         }
         
-        // Fetch Clinics
-        const clinicsData = JSON.parse(localStorage.getItem('clinics') || '[]');
+        // Fetch Clinics from server
+        let clinicsData: Clinic[] = [];
+        try {
+          const r = await fetch('/api/clinics');
+          if (r.ok) clinicsData = await r.json();
+        } catch (e) {
+          console.error("Fetch clinics error:", e);
+        }
         
-        // Fetch Settings
-        const settingsData = JSON.parse(localStorage.getItem('admin_settings') || JSON.stringify(settings));
+        // Fetch Settings from server
+        let settingsData = settings;
+        try {
+          const r = await fetch('/api/settings');
+          if (r.ok) settingsData = await r.json();
+        } catch (e) {
+          console.error("Fetch settings error:", e);
+        }
 
         setUsers(usersData);
         setClinics(clinicsData);
@@ -67,29 +73,42 @@ export default function Admin() {
     fetchData();
   }, []);
 
-  const addClinic = () => {
+  const addClinic = async () => {
     if (!newClinic.name || !newClinic.address) return;
-    const clinic: Clinic = {
-      id: Date.now().toString(),
-      name: newClinic.name,
-      address: newClinic.address,
-      phone: newClinic.phone,
-      services: newClinic.services.split(',').map(s => s.trim()),
-      doctors: [],
-      createdAt: new Date()
-    };
     
-    const updatedClinics = [...clinics, clinic];
-    setClinics(updatedClinics);
-    localStorage.setItem('clinics', JSON.stringify(updatedClinics));
-    setNewClinic({ name: '', address: '', phone: '', services: '' });
-    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    try {
+      const response = await fetch('/api/clinics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newClinic.name,
+          address: newClinic.address,
+          phone: newClinic.phone,
+          services: newClinic.services.split(',').map(s => s.trim()),
+        })
+      });
+
+      if (response.ok) {
+        const savedClinic = await response.json();
+        setClinics([...clinics, savedClinic]);
+        setNewClinic({ name: '', address: '', phone: '', services: '' });
+        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+      }
+    } catch (error) {
+      console.error("Error adding clinic:", error);
+    }
   };
 
-  const deleteClinic = (id: string) => {
-    const updatedClinics = clinics.filter(c => c.id !== id);
-    setClinics(updatedClinics);
-    localStorage.setItem('clinics', JSON.stringify(updatedClinics));
+  const deleteClinic = async (id: string) => {
+    try {
+      const response = await fetch(`/api/clinics/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        setClinics(clinics.filter(c => c.id !== id));
+        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+      }
+    } catch (error) {
+      console.error("Error deleting clinic:", error);
+    }
   };
 
   const handleTabChange = (tab: any) => {
@@ -104,15 +123,8 @@ export default function Admin() {
       tg.HapticFeedback.impactOccurred('medium');
     }
     
-    const updatedUsers = users.map(u => {
-      if (u.uid === uid) {
-        const updated = { ...u, isBlocked: !isBlocked };
-        localStorage.setItem(`user_profile_${uid}`, JSON.stringify(updated));
-        return updated;
-      }
-      return u;
-    });
-    setUsers(updatedUsers);
+    setUsers(users.map(u => u.uid === uid ? { ...u, isBlocked: !isBlocked } : u));
+    
     fetch(`/api/users/${encodeURIComponent(uid)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -120,20 +132,24 @@ export default function Admin() {
     }).catch(() => {});
   };
 
-  const saveSettings = () => {
-    if (tg?.HapticFeedback) {
-      tg.HapticFeedback.notificationOccurred('success');
+  const saveSettings = async () => {
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      });
+
+      if (response.ok) {
+        if (tg?.HapticFeedback) {
+          tg.HapticFeedback.notificationOccurred('success');
+        }
+        alert('Sozlamalar muvaffaqiyatli saqlandi!');
+      }
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      alert('Xatolik yuz berdi!');
     }
-    localStorage.setItem('admin_settings', JSON.stringify(settings));
-    if (settings.broadcast) {
-      localStorage.setItem('admin_broadcast', JSON.stringify({ text: settings.broadcast }));
-      // Dispatch storage event manually for the same window
-      window.dispatchEvent(new Event('storage'));
-    } else {
-      localStorage.removeItem('admin_broadcast');
-      window.dispatchEvent(new Event('storage'));
-    }
-    alert('Sozlamalar muvaffaqiyatli saqlandi!');
   };
 
   const handleClearAllLocalData = () => {

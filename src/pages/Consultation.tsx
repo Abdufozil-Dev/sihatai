@@ -8,6 +8,8 @@ import { useAuth } from '../context/AuthContext';
 import { GoogleGenAI } from '@google/genai';
 import { reminderService } from '../services/reminderService';
 import { notificationService } from '../services/notificationService';
+import { chatService } from '../services/chatService';
+import { activityService } from '../services/activityService';
 
 import { Clinic, Reminder, Settings } from '../types';
 
@@ -98,8 +100,18 @@ export default function Consultation() {
   const { user, setUser } = useAuth();
 
   useEffect(() => {
-    const savedSettings = localStorage.getItem('admin_settings');
-    if (savedSettings) setSettings(JSON.parse(savedSettings));
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const data = await response.json();
+          setSettings(data);
+        }
+      } catch (e) {
+        console.error("Fetch settings error:", e);
+      }
+    };
+    fetchSettings();
   }, []);
 
   useEffect(() => {
@@ -382,16 +394,44 @@ export default function Consultation() {
     );
   }
 
-  const handleSelectExpert = (expert: Expert) => {
+  const handleSelectExpert = async (expert: Expert) => {
     if (tg?.HapticFeedback) {
       tg.HapticFeedback.impactOccurred('medium');
     }
     setSelectedExpert(expert);
-    setMessages([{
-      role: 'assistant',
-      content: expert.welcomeMessage,
-      timestamp: new Date()
-    }]);
+    
+    // Log activity
+    if (user) {
+      activityService.logActivity({
+        userId: user.uid,
+        activityType: 'button_click',
+        details: { expertId: expert.id, action: 'select_expert' }
+      });
+    }
+
+    // Load history from DB
+    if (user) {
+      const history = await chatService.getHistory(user.uid, expert.id);
+      if (history && history.length > 0) {
+        setMessages(history.map(m => ({
+          role: m.role,
+          content: m.content,
+          timestamp: new Date(m.created_at || Date.now())
+        })));
+      } else {
+        setMessages([{
+          role: 'assistant',
+          content: expert.welcomeMessage,
+          timestamp: new Date()
+        }]);
+      }
+    } else {
+      setMessages([{
+        role: 'assistant',
+        content: expert.welcomeMessage,
+        timestamp: new Date()
+      }]);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -417,6 +457,16 @@ export default function Consultation() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    
+    // Save user message to DB
+    chatService.saveMessage({
+      user_id: user.uid,
+      expert_id: selectedExpert.id,
+      role: 'user',
+      content: input
+    });
+
+    const currentInput = input;
     setInput('');
     setIsTyping(true);
 
@@ -426,13 +476,21 @@ export default function Consultation() {
       const ai = new GoogleGenAI({ apiKey: (process.env as any).GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: [{ role: 'user', parts: [{ text: `${fullPrompt}\n\nUser says: ${input}` }] }],
+        contents: [{ role: 'user', parts: [{ text: `${fullPrompt}\n\nUser says: ${currentInput}` }] }],
       });
       
       const aiResponseText = response.text || '';
+
+      // Save assistant message to DB
+      chatService.saveMessage({
+        user_id: user.uid,
+        expert_id: selectedExpert.id,
+        role: 'assistant',
+        content: aiResponseText
+      });
       
       // Detect if user is confirming a time and doctor
-      const timeMatch = input.match(/(\d{2}:\d{2})/);
+      const timeMatch = currentInput.match(/(\d{2}:\d{2})/);
       const isBookingConfirmation = timeMatch && (
         messages.some(m => m.role === 'assistant' && (m.content.toLowerCase().includes('bron') || m.content.toLowerCase().includes('qabul'))) ||
         aiResponseText.toLowerCase().includes('tasdiq') ||
@@ -511,41 +569,34 @@ export default function Consultation() {
 
   if (selectedExpert) {
     return (
-      <div className="fixed inset-0 flex flex-col max-w-md mx-auto bg-[#F1F5F9] z-[60] overflow-hidden">
-        {/* Chat Header */}
-        <header className="bg-white/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between border-b border-slate-200 sticky top-0 z-10 shadow-sm pt-[calc(env(safe-area-inset-top,44px)+10px)]">
-          <div className="flex items-center gap-3">
+      <div className="flex flex-col h-screen bg-[#F1F5F9] relative overflow-hidden">
+        {/* Header */}
+        <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-2xl border-b border-slate-100 px-4 py-4 pt-16 shadow-sm">
+          <div className="max-w-md mx-auto flex items-center gap-4">
             <button 
               onClick={() => setSelectedExpert(null)}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 active:scale-90 transition-all"
+              className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 active:scale-90 transition-all"
             >
-              <ChevronLeft size={22} strokeWidth={2.5} />
+              <ChevronLeft size={20} strokeWidth={2.5} />
             </button>
             <div className="flex items-center gap-3">
-              <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shadow-md", selectedExpert.bgColor)}>
+              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-sm", selectedExpert.bgColor)}>
                 <img 
                   src={`https://emojicdn.elk.sh/${selectedExpert.icon}?style=apple`} 
                   alt={selectedExpert.name}
                   className="w-6 h-6 object-contain"
-                  referrerPolicy="no-referrer"
                 />
               </div>
-              <div className="flex flex-col">
-                <h3 className="font-bold text-slate-900 leading-tight text-sm tracking-tight">{selectedExpert.name}</h3>
-                <div className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                  <span className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">ONLAYN</span>
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 leading-none mb-1">{selectedExpert.name}</h2>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Onlayn</span>
                 </div>
               </div>
             </div>
           </div>
-          <button 
-            onClick={clearChat}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:text-rose-500 transition-all active:scale-90"
-          >
-            <Trash2 size={18} />
-          </button>
-        </header>
+        </div>
 
         {/* Messages Area */}
         <div 
@@ -616,14 +667,14 @@ export default function Consultation() {
           {isTyping && selectedExpert && (
             <div className="flex flex-col items-start space-y-2 ml-2 mb-4">
               <div className="flex items-center gap-3 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-100 shadow-sm">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  {selectedExpert.name} yozmoqda
+                </span>
                 <div className="flex gap-1">
                   <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce" />
                   <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]" />
                   <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]" />
                 </div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  {selectedExpert.name} yozmoqda...
-                </span>
               </div>
             </div>
           )}
@@ -684,33 +735,36 @@ export default function Consultation() {
           </div>
         </div>
 
-        <div className="px-6 space-y-4">
+        <div className="px-4 space-y-4">
           {EXPERTS.map((expert) => (
             <motion.button
               key={expert.id}
               whileTap={{ scale: 0.98 }}
               onClick={() => handleSelectExpert(expert)}
-              className="w-full bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-5 text-left group relative overflow-hidden transition-all hover:border-blue-100 hover:shadow-lg hover:shadow-blue-50/30"
+              className="w-full bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 text-left group relative overflow-hidden transition-all hover:border-blue-100 hover:shadow-lg hover:shadow-blue-50/20"
             >
               <div className={cn(
-                "w-20 h-20 rounded-[2rem] flex items-center justify-center shadow-md shrink-0 transition-transform group-hover:scale-105",
+                "w-20 h-20 rounded-[1.5rem] flex items-center justify-center shadow-sm shrink-0 transition-transform group-hover:scale-105",
                 expert.bgColor
               )}>
-                <span className="text-4xl">{expert.icon}</span>
+                <img 
+                  src={`https://emojicdn.elk.sh/${expert.icon}?style=apple`} 
+                  alt={expert.name}
+                  className="w-12 h-12 object-contain"
+                  referrerPolicy="no-referrer"
+                />
               </div>
               
-              <div className="flex-1 space-y-1">
-                <div>
-                  <h3 className="text-xl font-bold text-[#0F172A] tracking-tight leading-none mb-1.5">{expert.name}</h3>
-                  <p className="text-[10px] font-bold text-[#2563EB] uppercase tracking-widest leading-none">{expert.title}</p>
-                </div>
-                <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2 pr-6">
+              <div className="flex-1 min-w-0 pr-2">
+                <h3 className="text-xl font-bold text-[#0F172A] tracking-tight leading-none mb-1">{expert.name}</h3>
+                <p className="text-[10px] font-bold text-[#2563EB] uppercase tracking-widest leading-none mb-2">{expert.title}</p>
+                <p className="text-[13px] text-slate-500 font-medium leading-snug line-clamp-2">
                   {expert.description}
                 </p>
               </div>
               
-              <div className="text-slate-200 group-hover:text-blue-500 transition-all group-hover:translate-x-1 shrink-0 pr-1">
-                <ChevronRight size={20} />
+              <div className="text-slate-200 group-hover:text-blue-500 transition-all shrink-0 pr-1">
+                <ChevronRight size={24} />
               </div>
             </motion.button>
           ))}
