@@ -608,10 +608,10 @@ async function startServer() {
 
   app.post('/api/clinics', async (req, res) => {
     try {
-      const { name, address, phone, services } = req.body;
+      const { name, address, phone, services, photo_url, description, working_hours, location_url } = req.body;
       const { data, error } = await getSupabaseAdmin()
         .from('clinics')
-        .insert({ name, address, phone, services })
+        .insert({ name, address, phone, services, photo_url, description, working_hours, location_url })
         .select('*')
         .maybeSingle();
       if (error) throw error;
@@ -625,6 +625,50 @@ async function startServer() {
     try {
       const { error } = await getSupabaseAdmin()
         .from('clinics')
+        .delete()
+        .eq('id', req.params.id);
+      if (error) throw error;
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // --- Doctors API ---
+  app.get('/api/doctors', async (req, res) => {
+    try {
+      const { clinicId } = req.query;
+      let query = getSupabaseAdmin().from('doctors').select('*, clinics(name)');
+      if (clinicId) {
+        query = query.eq('clinic_id', clinicId);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      res.json(data || []);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/doctors', async (req, res) => {
+    try {
+      const { clinic_id, name, specialty, phone, photo_url, experience, education, bio, availability } = req.body;
+      const { data, error } = await getSupabaseAdmin()
+        .from('doctors')
+        .insert({ clinic_id, name, specialty, phone, photo_url, experience, education, bio, availability })
+        .select('*')
+        .maybeSingle();
+      if (error) throw error;
+      res.json(data);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete('/api/doctors/:id', async (req, res) => {
+    try {
+      const { error } = await getSupabaseAdmin()
+        .from('doctors')
         .delete()
         .eq('id', req.params.id);
       if (error) throw error;

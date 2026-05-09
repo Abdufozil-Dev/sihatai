@@ -103,7 +103,11 @@ create table if not exists public.clinics (
   name text not null,
   address text not null,
   phone text,
+  photo_url text,
+  description text,
+  working_hours text,
   services text[],
+  location_url text,
   created_at timestamptz default now()
 );
 
@@ -113,6 +117,11 @@ create table if not exists public.doctors (
   name text not null,
   specialty text not null,
   phone text,
+  photo_url text,
+  experience text,
+  education text,
+  bio text,
+  availability text[],
   created_at timestamptz default now()
 );
 

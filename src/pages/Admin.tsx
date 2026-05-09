@@ -14,8 +14,28 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<'stats' | 'users' | 'clinics' | 'settings'>('stats');
   const [users, setUsers] = useState<User[]>([]);
   const [clinics, setClinics] = useState<Clinic[]>([]);
-  const [newClinic, setNewClinic] = useState({ name: '', address: '', phone: '', services: '' });
-  const [newDoctor, setNewDoctor] = useState({ name: '', specialty: '', phone: '', clinicId: '' });
+  const [newClinic, setNewClinic] = useState({ 
+    name: '', 
+    address: '', 
+    phone: '', 
+    services: '', 
+    photo_url: '', 
+    description: '', 
+    working_hours: '', 
+    location_url: '' 
+  });
+  const [newDoctor, setNewDoctor] = useState({ 
+    name: '', 
+    specialty: '', 
+    phone: '', 
+    clinicId: '', 
+    photo_url: '', 
+    experience: '', 
+    education: '', 
+    bio: '', 
+    availability: '' 
+  });
+  const [selectedClinicId, setSelectedClinicId] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings>({
     aiSystemPrompt: "Siz malakali tibbiy yordamchisiz. Foydalanuvchi simptomlarini tahlil qiling va ehtimoliy sabablarni ayting. MUHIM: Har doim shifokorga murojaat qilishni tavsiya eting.",
     basicLimit: 5,
@@ -81,21 +101,91 @@ export default function Admin() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: newClinic.name,
-          address: newClinic.address,
-          phone: newClinic.phone,
+          ...newClinic,
           services: newClinic.services.split(',').map(s => s.trim()),
         })
       });
 
       if (response.ok) {
         const savedClinic = await response.json();
-        setClinics([...clinics, savedClinic]);
-        setNewClinic({ name: '', address: '', phone: '', services: '' });
+        setClinics([...clinics, { ...savedClinic, doctors: [] }]);
+        setNewClinic({ 
+          name: '', 
+          address: '', 
+          phone: '', 
+          services: '', 
+          photo_url: '', 
+          description: '', 
+          working_hours: '', 
+          location_url: '' 
+        });
         if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
       }
     } catch (error) {
       console.error("Error adding clinic:", error);
+    }
+  };
+
+  const addDoctor = async () => {
+    if (!newDoctor.name || !newDoctor.clinicId) return;
+
+    try {
+      const response = await fetch('/api/doctors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clinic_id: newDoctor.clinicId,
+          name: newDoctor.name,
+          specialty: newDoctor.specialty,
+          phone: newDoctor.phone,
+          photo_url: newDoctor.photo_url,
+          experience: newDoctor.experience,
+          education: newDoctor.education,
+          bio: newDoctor.bio,
+          availability: newDoctor.availability.split(',').map(s => s.trim()),
+        })
+      });
+
+      if (response.ok) {
+        const savedDoctor = await response.json();
+        setClinics(clinics.map(c => {
+          if (c.id === newDoctor.clinicId) {
+            return { ...c, doctors: [...(c.doctors || []), savedDoctor] };
+          }
+          return c;
+        }));
+        setNewDoctor({ 
+          name: '', 
+          specialty: '', 
+          phone: '', 
+          clinicId: '', 
+          photo_url: '', 
+          experience: '', 
+          education: '', 
+          bio: '', 
+          availability: '' 
+        });
+        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+      }
+    } catch (error) {
+      console.error("Error adding doctor:", error);
+    }
+  };
+
+  const deleteDoctor = async (id: string, clinicId: string) => {
+    try {
+      const response = await fetch(`/api/doctors/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        setClinics(clinics.map(c => {
+          if (c.id === clinicId) {
+            return { ...c, doctors: (c.doctors || []).filter(d => d.id !== id) };
+          }
+          return c;
+        }));
+        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+      }
+    } catch (error) {
+      console.error("Error deleting doctor:", error);
     }
   };
 
@@ -351,30 +441,60 @@ export default function Admin() {
             <div className="bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-5">
               <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight">Yangi klinika qo'shish</h3>
               <div className="grid grid-cols-1 gap-4">
-                <input
-                  placeholder="Klinika nomi"
-                  value={newClinic.name}
-                  onChange={(e) => setNewClinic({ ...newClinic, name: e.target.value })}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
-                />
-                <input
-                  placeholder="Manzil"
-                  value={newClinic.address}
-                  onChange={(e) => setNewClinic({ ...newClinic, address: e.target.value })}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
-                />
-                <input
-                  placeholder="Telefon"
-                  value={newClinic.phone}
-                  onChange={(e) => setNewClinic({ ...newClinic, phone: e.target.value })}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
-                />
-                <input
-                  placeholder="Xizmatlar (vergul bilan ajrating)"
-                  value={newClinic.services}
-                  onChange={(e) => setNewClinic({ ...newClinic, services: e.target.value })}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
-                />
+                <div className="space-y-4">
+                  <div className="flex gap-4">
+                    <input
+                      placeholder="Klinika nomi"
+                      value={newClinic.name}
+                      onChange={(e) => setNewClinic({ ...newClinic, name: e.target.value })}
+                      className="flex-1 h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
+                    />
+                    <input
+                      placeholder="Telefon"
+                      value={newClinic.phone}
+                      onChange={(e) => setNewClinic({ ...newClinic, phone: e.target.value })}
+                      className="w-1/3 h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
+                    />
+                  </div>
+                  <input
+                    placeholder="Manzil"
+                    value={newClinic.address}
+                    onChange={(e) => setNewClinic({ ...newClinic, address: e.target.value })}
+                    className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
+                  />
+                  <input
+                    placeholder="Rasm URL (Photo URL)"
+                    value={newClinic.photo_url}
+                    onChange={(e) => setNewClinic({ ...newClinic, photo_url: e.target.value })}
+                    className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
+                  />
+                  <textarea
+                    placeholder="Tavsif (Description)"
+                    value={newClinic.description}
+                    onChange={(e) => setNewClinic({ ...newClinic, description: e.target.value })}
+                    className="w-full h-24 p-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
+                  />
+                  <div className="flex gap-4">
+                    <input
+                      placeholder="Ish vaqti (e.g. 09:00-18:00)"
+                      value={newClinic.working_hours}
+                      onChange={(e) => setNewClinic({ ...newClinic, working_hours: e.target.value })}
+                      className="flex-1 h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
+                    />
+                    <input
+                      placeholder="Xaritalar URL (Location)"
+                      value={newClinic.location_url}
+                      onChange={(e) => setNewClinic({ ...newClinic, location_url: e.target.value })}
+                      className="flex-1 h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
+                    />
+                  </div>
+                  <input
+                    placeholder="Xizmatlar (vergul bilan ajrating)"
+                    value={newClinic.services}
+                    onChange={(e) => setNewClinic({ ...newClinic, services: e.target.value })}
+                    className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
+                  />
+                </div>
                 <button 
                   onClick={addClinic}
                   className="w-full h-12 bg-blue-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2"
@@ -385,27 +505,158 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* Clinics List */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-2">Mavjud klinikalar</h3>
+            {/* Clinics and Doctors List */}
+            <div className="space-y-6">
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-2">Mavjud klinikalar va shifokorlar</h3>
               {clinics.map((clinic) => (
-                <div key={clinic.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
-                        <MapPin size={20} />
+                <div key={clinic.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+                  <div className="p-6 border-b border-slate-50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-4">
+                        <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center overflow-hidden border border-slate-100">
+                          {clinic.photo_url ? (
+                            <img src={clinic.photo_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <MapPin size={24} className="text-blue-600" />
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-slate-900 text-lg leading-tight">{clinic.name}</h4>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{clinic.address}</p>
+                          <div className="flex gap-2 pt-1">
+                            {clinic.services?.slice(0, 3).map((s, i) => (
+                              <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-bold rounded-md uppercase">
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-slate-900">{clinic.name}</h4>
-                        <p className="text-[10px] text-slate-400 font-medium">{clinic.address}</p>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setSelectedClinicId(selectedClinicId === clinic.id ? null : clinic.id)}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all",
+                            selectedClinicId === clinic.id ? "bg-slate-900 text-white" : "bg-slate-50 text-slate-600"
+                          )}
+                        >
+                          {selectedClinicId === clinic.id ? 'Yopish' : '+ Shifokor'}
+                        </button>
+                        <button 
+                          onClick={() => deleteClinic(clinic.id)}
+                          className="w-10 h-10 flex items-center justify-center text-rose-500 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => deleteClinic(clinic.id)}
-                      className="text-rose-500 p-2 hover:bg-rose-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                  </div>
+
+                  {/* Add Doctor Form (Expanded) */}
+                  <AnimatePresence>
+                    {selectedClinicId === clinic.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="bg-slate-50/50 p-6 border-b border-slate-100 overflow-hidden"
+                      >
+                        <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Shifokor qo'shish: {clinic.name}</h5>
+                        <div className="grid grid-cols-2 gap-4">
+                          <input
+                            placeholder="Shifokor ismi"
+                            value={newDoctor.name}
+                            onChange={(e) => setNewDoctor({ ...newDoctor, name: e.target.value, clinicId: clinic.id })}
+                            className="h-11 px-4 bg-white border border-slate-100 rounded-xl outline-none text-sm font-medium"
+                          />
+                          <input
+                            placeholder="Mutaxassisligi"
+                            value={newDoctor.specialty}
+                            onChange={(e) => setNewDoctor({ ...newDoctor, specialty: e.target.value })}
+                            className="h-11 px-4 bg-white border border-slate-100 rounded-xl outline-none text-sm font-medium"
+                          />
+                          <input
+                            placeholder="Telefon"
+                            value={newDoctor.phone}
+                            onChange={(e) => setNewDoctor({ ...newDoctor, phone: e.target.value })}
+                            className="h-11 px-4 bg-white border border-slate-100 rounded-xl outline-none text-sm font-medium"
+                          />
+                          <input
+                            placeholder="Rasm URL"
+                            value={newDoctor.photo_url}
+                            onChange={(e) => setNewDoctor({ ...newDoctor, photo_url: e.target.value })}
+                            className="h-11 px-4 bg-white border border-slate-100 rounded-xl outline-none text-sm font-medium"
+                          />
+                          <input
+                            placeholder="Tajribasi (e.g. 10 yil)"
+                            value={newDoctor.experience}
+                            onChange={(e) => setNewDoctor({ ...newDoctor, experience: e.target.value })}
+                            className="h-11 px-4 bg-white border border-slate-100 rounded-xl outline-none text-sm font-medium"
+                          />
+                          <input
+                            placeholder="O'qigan joyi"
+                            value={newDoctor.education}
+                            onChange={(e) => setNewDoctor({ ...newDoctor, education: e.target.value })}
+                            className="h-11 px-4 bg-white border border-slate-100 rounded-xl outline-none text-sm font-medium"
+                          />
+                          <textarea
+                            placeholder="Biografiya"
+                            value={newDoctor.bio}
+                            onChange={(e) => setNewDoctor({ ...newDoctor, bio: e.target.value })}
+                            className="col-span-2 h-20 p-4 bg-white border border-slate-100 rounded-xl outline-none text-sm font-medium"
+                          />
+                          <input
+                            placeholder="Vaqtlari (vergul bilan, e.g. 09:00, 10:00)"
+                            value={newDoctor.availability}
+                            onChange={(e) => setNewDoctor({ ...newDoctor, availability: e.target.value })}
+                            className="col-span-2 h-11 px-4 bg-white border border-slate-100 rounded-xl outline-none text-sm font-medium"
+                          />
+                        </div>
+                        <button 
+                          onClick={addDoctor}
+                          className="mt-4 w-full h-11 bg-slate-900 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all"
+                        >
+                          <Plus size={16} />
+                          Shifokorni saqlash
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Doctors List */}
+                  <div className="p-6 space-y-4">
+                    <h5 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Klinika shifokorlari ({clinic.doctors?.length || 0})</h5>
+                    {clinic.doctors && clinic.doctors.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-3">
+                        {clinic.doctors.map((doctor) => (
+                          <div key={doctor.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100 group">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-slate-100">
+                                {doctor.photo_url ? (
+                                  <img src={doctor.photo_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <Stethoscope size={20} className="text-slate-300" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-900 text-sm leading-none mb-1">{doctor.name}</p>
+                                <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest">{doctor.specialty}</p>
+                              </div>
+                            </div>
+                            <button 
+                              onClick={() => deleteDoctor(doctor.id, clinic.id)}
+                              className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest text-center py-4 italic">
+                        Shifokorlar qo'shilmagan
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}

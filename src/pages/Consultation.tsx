@@ -247,7 +247,7 @@ export default function Consultation() {
 
   if (selectedDoctorType) {
     return (
-      <div className="fixed inset-0 flex flex-col max-w-md mx-auto bg-[#F1F5F9] z-[60] overflow-hidden">
+      <div className="absolute inset-0 flex flex-col max-w-md mx-auto bg-[#F1F5F9] z-[60] overflow-hidden">
         <header className="bg-white/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between border-b border-slate-200 sticky top-0 z-10 shadow-sm">
           <div className="flex items-center gap-3">
             <button 
@@ -315,7 +315,7 @@ export default function Consultation() {
           ))}
         </div>
 
-        <div className="fixed bottom-4 left-0 right-0 px-6 z-40">
+        <div className="absolute bottom-4 left-0 right-0 px-6 z-40">
           <div className="max-w-md mx-auto bg-white/80 backdrop-blur-2xl p-3 rounded-[2.5rem] border border-white shadow-2xl flex items-center gap-3">
             <input 
               type="text"
@@ -361,7 +361,7 @@ export default function Consultation() {
     ];
 
     return (
-      <div className="fixed inset-0 bg-slate-50 z-[60] flex flex-col max-w-md mx-auto p-6">
+      <div className="absolute inset-0 bg-slate-50 z-[60] flex flex-col max-w-md mx-auto p-6">
         <div className="flex items-center gap-4 mb-8">
           <button 
             onClick={() => setShowDoctorSelection(false)}
@@ -569,149 +569,174 @@ export default function Consultation() {
 
   if (selectedExpert) {
     return (
-      <div className="flex flex-col h-screen bg-[#F1F5F9] relative overflow-hidden">
+      <div className="flex flex-col h-screen bg-[#F8FAFC] relative overflow-hidden">
+        {/* Background Decorative Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/5 blur-[120px] rounded-full" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-600/5 blur-[120px] rounded-full" />
+        </div>
+
         {/* Header */}
-        <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-2xl border-b border-slate-100 px-4 py-4 pt-16 shadow-sm">
-          <div className="max-w-md mx-auto flex items-center gap-4">
-            <button 
-              onClick={() => setSelectedExpert(null)}
-              className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 active:scale-90 transition-all"
-            >
-              <ChevronLeft size={20} strokeWidth={2.5} />
-            </button>
-            <div className="flex items-center gap-3">
-              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-sm", selectedExpert.bgColor)}>
-                <img 
-                  src={`https://emojicdn.elk.sh/${selectedExpert.icon}?style=apple`} 
-                  alt={selectedExpert.name}
-                  className="w-6 h-6 object-contain"
-                />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900 leading-none mb-1">{selectedExpert.name}</h2>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                  <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Onlayn</span>
+        <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-100 px-4 py-4 pt-16 shadow-sm">
+          <div className="max-w-md mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setSelectedExpert(null)}
+                className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 transition-all border border-slate-100"
+              >
+                <ChevronLeft size={20} strokeWidth={2.5} />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-blue-100/50", selectedExpert.bgColor)}>
+                  <img 
+                    src={`https://emojicdn.elk.sh/${selectedExpert.icon}?style=apple`} 
+                    alt={selectedExpert.name}
+                    className="w-6 h-6 object-contain"
+                  />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900 leading-none mb-1">{selectedExpert.name}</h2>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Onlayn</span>
+                  </div>
                 </div>
               </div>
             </div>
+            <button 
+              onClick={clearChat}
+              className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-400 active:scale-90 transition-all border border-rose-100"
+            >
+              <Trash2 size={18} />
+            </button>
           </div>
         </div>
 
         {/* Messages Area */}
         <div 
           ref={scrollRef}
-          className="flex-1 overflow-y-auto px-4 pt-4 pb-32 space-y-6 no-scrollbar"
+          className="flex-1 overflow-y-auto px-4 pt-6 pb-36 space-y-6 no-scrollbar relative z-10"
         >
           {messages.map((msg, idx) => (
             <motion.div
               key={idx}
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 200 }}
               className={cn(
-                "flex flex-col max-w-[85%] relative",
+                "flex flex-col max-w-[88%] relative group",
                 msg.role === 'user' ? "ml-auto items-end" : "mr-auto items-start"
               )}
             >
               <div className={cn(
-                "p-4 rounded-[2rem] text-[15px] leading-relaxed shadow-sm relative",
+                "p-4 rounded-[2rem] text-[15px] leading-relaxed shadow-sm relative transition-all duration-300",
                 msg.role === 'user' 
-                  ? "bg-blue-600 text-white rounded-tr-none" 
-                  : "bg-white text-slate-800 border border-slate-100 rounded-tl-none"
+                  ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-none shadow-blue-100/50" 
+                  : "bg-white text-slate-800 border border-slate-100 rounded-tl-none hover:shadow-md"
               )}>
-                <div className="prose prose-sm max-w-none prose-slate">
+                <div className={cn(
+                  "prose prose-sm max-w-none",
+                  msg.role === 'user' ? "prose-invert text-white" : "prose-slate"
+                )}>
                   <ReactMarkdown 
                     components={{
-                      p: ({node, ...props}) => <p className="mb-3 last:mb-0 leading-relaxed font-medium" {...props} />,
-                      ul: ({node, ...props}) => <ul className="space-y-1.5 mb-4 list-none" {...props} />,
+                      p: ({node, ...props}) => <p className="mb-2 last:mb-0 leading-relaxed font-medium" {...props} />,
+                      ul: ({node, ...props}) => <ul className="space-y-1.5 mb-3 list-none pl-1" {...props} />,
                       li: ({node, ...props}) => (
-                        <li className="flex items-start gap-2 font-semibold text-slate-700">
-                          <span className="text-blue-600 font-black text-base">•</span>
-                          <span>{props.children}</span>
+                        <li className="flex items-start gap-2">
+                          <span className={cn(
+                            "font-black text-lg leading-none mt-0.5",
+                            msg.role === 'user' ? "text-blue-200" : "text-blue-600"
+                          )}>•</span>
+                          <span className="font-semibold">{props.children}</span>
                         </li>
                       ),
-                      em: ({node, ...props}) => <em className="text-slate-400 italic block mt-3 text-[10px] font-bold uppercase tracking-tight" {...props} />,
-                      strong: ({node, ...props}) => <strong className="font-black text-slate-900" {...props} />,
+                      strong: ({node, ...props}) => <strong className="font-black" {...props} />,
                     }}
                   >
                     {msg.content}
                   </ReactMarkdown>
                 </div>
                 
-                {msg.role === 'assistant' && (
-                  <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px]", selectedExpert.bgColor)}>
+                <div className={cn(
+                  "flex items-center gap-2 mt-3 pt-2 border-t",
+                  msg.role === 'user' ? "border-blue-500/30" : "border-slate-50"
+                )}>
+                  <span className={cn(
+                    "text-[8px] font-black uppercase tracking-widest",
+                    msg.role === 'user' ? "text-blue-200" : "text-slate-300"
+                  )}>
+                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </span>
+                  {msg.role === 'assistant' && (
+                    <div className="flex items-center gap-1.5 ml-auto">
+                      <div className={cn("w-4 h-4 rounded-full flex items-center justify-center text-[8px]", selectedExpert.bgColor)}>
                         {selectedExpert.icon}
                       </div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">
                         {selectedExpert.name}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-[8px] font-bold uppercase tracking-widest text-slate-300">
-                        {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {msg.role === 'user' && (
-                  <div className="text-[8px] font-bold uppercase tracking-widest mt-2 text-blue-200">
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}
           {isTyping && selectedExpert && (
-            <div className="flex flex-col items-start space-y-2 ml-2 mb-4">
-              <div className="flex items-center gap-3 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-100 shadow-sm">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-start space-y-2 ml-2 mb-4"
+            >
+              <div className="flex items-center gap-3 px-5 py-3 bg-white/90 backdrop-blur-sm rounded-full border border-slate-100 shadow-sm">
+                <div className="flex gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-duration:0.8s]" />
+                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]" />
+                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]" />
+                </div>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                   {selectedExpert.name} yozmoqda
                 </span>
-                <div className="flex gap-1">
-                  <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce" />
-                  <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]" />
-                  <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]" />
-                </div>
               </div>
-            </div>
+            </motion.div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
         {/* Input Area */}
-        <div className="fixed bottom-0 left-0 right-0 px-4 pb-[calc(env(safe-area-inset-bottom,16px)+16px)] pt-4 z-40 bg-gradient-to-t from-[#F1F5F9] via-[#F1F5F9]/90 to-transparent">
-          <div className="max-w-md mx-auto bg-white/95 backdrop-blur-2xl p-2 rounded-[2rem] border border-white shadow-2xl flex items-center gap-2">
-            <input 
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Savolingizni yozing..."
-              className="flex-1 bg-transparent border-none focus:ring-0 text-[15px] font-medium px-4 py-2 outline-none text-slate-900 placeholder:text-slate-400 min-w-0"
-            />
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button 
-                onClick={toggleListening}
-                className={cn(
-                  "w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-90",
-                  isListening ? "bg-rose-100 text-rose-600 shadow-rose-100 shadow-lg" : "bg-slate-50 text-slate-400"
-                )}
-              >
-                {isListening ? <MicOff size={20} className="animate-pulse" /> : <Mic size={20} />}
-              </button>
-              <button 
-                onClick={handleSendMessage}
-                disabled={!input.trim() || isTyping}
-                className={cn(
-                  "w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-lg active:scale-90 disabled:opacity-50 disabled:scale-100",
-                  input.trim() ? "bg-blue-600 text-white shadow-blue-200" : "bg-slate-100 text-slate-300 shadow-none"
-                )}
-              >
-                <Send size={20} />
-              </button>
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-[calc(env(safe-area-inset-bottom,16px)+16px)] pt-6 z-40 bg-gradient-to-t from-[#F8FAFC] via-[#F8FAFC]/90 to-transparent">
+          <div className="max-w-md mx-auto group">
+            <div className="absolute inset-0 bg-blue-600/5 blur-2xl rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+            <div className="relative bg-white/95 backdrop-blur-2xl p-2.5 rounded-[2.5rem] border border-white shadow-2xl shadow-blue-900/10 flex items-center gap-2 transition-all duration-300 group-focus-within:border-blue-100">
+              <input 
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Savolingizni yozing..."
+                className="flex-1 bg-transparent border-none focus:ring-0 text-[15px] font-medium px-5 py-2.5 outline-none text-slate-900 placeholder:text-slate-400 min-w-0"
+              />
+              <div className="flex items-center gap-2 shrink-0">
+                <button 
+                  onClick={toggleListening}
+                  className={cn(
+                    "w-12 h-12 rounded-[1.25rem] flex items-center justify-center transition-all active:scale-90",
+                    isListening ? "bg-rose-100 text-rose-600 shadow-rose-100 shadow-lg" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                  )}
+                >
+                  {isListening ? <MicOff size={22} className="animate-pulse" /> : <Mic size={22} />}
+                </button>
+                <button 
+                  onClick={handleSendMessage}
+                  disabled={!input.trim() || isTyping}
+                  className={cn(
+                    "w-12 h-12 rounded-[1.25rem] flex items-center justify-center transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:shadow-none",
+                    input.trim() ? "bg-blue-600 text-white shadow-blue-200" : "bg-slate-100 text-slate-300"
+                  )}
+                >
+                  <Send size={22} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
