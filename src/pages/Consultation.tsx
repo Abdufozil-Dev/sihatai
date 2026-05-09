@@ -247,7 +247,7 @@ export default function Consultation() {
 
   if (selectedDoctorType) {
     return (
-      <div className="absolute inset-0 flex flex-col max-w-md mx-auto bg-[#F1F5F9] z-[60] overflow-hidden">
+      <div className="fixed inset-0 flex flex-col max-w-md mx-auto bg-[#F1F5F9] z-[60] overflow-hidden">
         <header className="bg-white/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between border-b border-slate-200 sticky top-0 z-10 shadow-sm">
           <div className="flex items-center gap-3">
             <button 
@@ -704,7 +704,7 @@ export default function Consultation() {
         </div>
 
         {/* Input Area */}
-        <div className="absolute bottom-0 left-0 right-0 px-4 pb-[calc(env(safe-area-inset-bottom,16px)+16px)] pt-6 z-40 bg-gradient-to-t from-[#F8FAFC] via-[#F8FAFC]/90 to-transparent">
+        <div className="fixed bottom-0 left-0 right-0 px-4 pb-[calc(env(safe-area-inset-bottom,16px)+16px)] pt-6 z-40 bg-gradient-to-t from-[#F8FAFC] via-[#F8FAFC]/90 to-transparent">
           <div className="max-w-md mx-auto group">
             <div className="absolute inset-0 bg-blue-600/5 blur-2xl rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
             <div className="relative bg-white/95 backdrop-blur-2xl p-2.5 rounded-[2.5rem] border border-white shadow-2xl shadow-blue-900/10 flex items-center gap-2 transition-all duration-300 group-focus-within:border-blue-100">
