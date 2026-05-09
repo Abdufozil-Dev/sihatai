@@ -45,7 +45,7 @@ const ReminderChecker = () => {
   const [lastCheck, setLastCheck] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.uid) return;
 
     const checkReminders = async () => {
       const now = new Date();
@@ -54,39 +54,43 @@ const ReminderChecker = () => {
       if (currentHourMin === lastCheck) return;
       setLastCheck(currentHourMin);
 
-      const savedReminders: Reminder[] = JSON.parse(localStorage.getItem('reminders') || '[]');
-      
-      for (const reminder of savedReminders) {
-        if (!reminder.isActive) continue;
+      try {
+        const savedReminders = await reminderService.getUserReminders(user.uid);
+        
+        for (const reminder of savedReminders) {
+          if (!reminder.isActive) continue;
 
-        // Calculate time difference
-        const [remHour, remMin] = reminder.time.split(':').map(Number);
-        const reminderDate = new Date();
-        reminderDate.setHours(remHour, remMin, 0, 0);
+          // Calculate time difference
+          const [remHour, remMin] = reminder.time.split(':').map(Number);
+          const reminderDate = new Date();
+          reminderDate.setHours(remHour, remMin, 0, 0);
 
-        const diffMs = reminderDate.getTime() - now.getTime();
-        const diffMins = Math.round(diffMs / 60000);
+          const diffMs = reminderDate.getTime() - now.getTime();
+          const diffMins = Math.round(diffMs / 60000);
 
-        // Notify 30 minutes before
-        if (diffMins === 30) {
-          const message = `🔔 <b>Eslatma:</b> 30 daqiqadan so'ng sizda tadbir bor: <i>${reminder.title}</i>\n\nIltimos, tayyor bo'ling!`;
-          
-          // Show in Mini App
-          if (tg?.showPopup) {
-            tg.showPopup({
-              title: 'Eslatma',
-              message: `${reminder.title} ga 30 daqiqa qoldi!`,
-              buttons: [{ type: 'ok' }]
+          // Notify 30 minutes before
+          if (diffMins === 30) {
+            const message = `🔔 <b>Eslatma:</b> 30 daqiqadan so'ng sizda tadbir bor: <i>${reminder.medicineName}</i>\n\nIltimos, tayyor bo'ling!`;
+            
+            // Show in Mini App
+            if (tg?.showPopup) {
+              tg.showPopup({
+                title: 'Eslatma',
+                message: `${reminder.medicineName} ga 30 daqiqa qoldi!`,
+                buttons: [{ type: 'ok' }]
+              });
+            }
+
+            // Send to Telegram Bot via backend
+            fetch('/api/send-notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ chatId: user.uid, message }),
             });
           }
-
-          // Send to Telegram Bot
-          fetch('/api/send-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chatId: user.telegramId, message }),
-          });
         }
+      } catch (err) {
+        console.error("Reminder check failed:", err);
       }
     };
 
@@ -124,7 +128,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans pt-[env(safe-area-inset-top,44px)] pb-[env(safe-area-inset-bottom,20px)]">
       <ReminderChecker />
       {/* Main Content */}
-      <main className={cn("flex-1 max-w-2xl mx-auto w-full px-4 pt-12", showNav ? "pb-40" : "pb-12")}>
+      <main className={cn("flex-1 max-w-md mx-auto w-full px-4 pt-8", showNav ? "pb-40" : "pb-12")}>
         {children}
       </main>
 

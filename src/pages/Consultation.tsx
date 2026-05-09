@@ -247,7 +247,7 @@ export default function Consultation() {
 
   if (selectedDoctorType) {
     return (
-      <div className="fixed inset-0 flex flex-col max-w-md mx-auto bg-[#F1F5F9] z-[60] overflow-hidden">
+      <div className="fixed inset-0 flex flex-col bg-[#F1F5F9] z-[60] overflow-hidden">
         <header className="bg-white/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between border-b border-slate-200 sticky top-0 z-10 shadow-sm">
           <div className="flex items-center gap-3">
             <button 
@@ -315,7 +315,7 @@ export default function Consultation() {
           ))}
         </div>
 
-        <div className="absolute bottom-4 left-0 right-0 px-6 z-40">
+        <div className="fixed bottom-4 left-0 right-0 px-6 z-40">
           <div className="max-w-md mx-auto bg-white/80 backdrop-blur-2xl p-3 rounded-[2.5rem] border border-white shadow-2xl flex items-center gap-3">
             <input 
               type="text"
@@ -361,7 +361,7 @@ export default function Consultation() {
     ];
 
     return (
-      <div className="absolute inset-0 bg-slate-50 z-[60] flex flex-col max-w-md mx-auto p-6">
+      <div className="fixed inset-0 bg-slate-50 z-[60] flex flex-col p-6 overflow-y-auto">
         <div className="flex items-center gap-4 mb-8">
           <button 
             onClick={() => setShowDoctorSelection(false)}
@@ -440,7 +440,10 @@ export default function Consultation() {
 
     const today = new Date().toISOString().split('T')[0];
     const normalizedCount = user.lastRequestDate === today ? (user.dailyRequestCount || 0) : 0;
-    const dailyLimit = 50;
+    
+    // Use limit from settings or default to 50
+    const dailyLimit = settings?.proLimit || 50;
+    
     if (normalizedCount >= dailyLimit) {
       tg?.showAlert(`Bugungi limit tugadi (${dailyLimit} ta). Ertaga qayta urinib ko'ring.`);
       return;
@@ -569,7 +572,7 @@ export default function Consultation() {
 
   if (selectedExpert) {
     return (
-      <div className="flex flex-col h-screen bg-[#F8FAFC] relative overflow-hidden">
+      <div className="fixed inset-0 flex flex-col bg-[#F8FAFC] z-[60] overflow-hidden">
         {/* Background Decorative Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/5 blur-[120px] rounded-full" />
@@ -624,12 +627,12 @@ export default function Consultation() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ type: 'spring', damping: 20, stiffness: 200 }}
               className={cn(
-                "flex flex-col max-w-[88%] relative group",
+                "flex flex-col max-w-[85%] relative group",
                 msg.role === 'user' ? "ml-auto items-end" : "mr-auto items-start"
               )}
             >
               <div className={cn(
-                "p-4 rounded-[2rem] text-[15px] leading-relaxed shadow-sm relative transition-all duration-300",
+                "p-5 rounded-[2.5rem] text-[15px] leading-relaxed shadow-sm relative transition-all duration-300",
                 msg.role === 'user' 
                   ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-none shadow-blue-100/50" 
                   : "bg-white text-slate-800 border border-slate-100 rounded-tl-none hover:shadow-md"
@@ -640,18 +643,19 @@ export default function Consultation() {
                 )}>
                   <ReactMarkdown 
                     components={{
-                      p: ({node, ...props}) => <p className="mb-2 last:mb-0 leading-relaxed font-medium" {...props} />,
-                      ul: ({node, ...props}) => <ul className="space-y-1.5 mb-3 list-none pl-1" {...props} />,
+                      p: ({node, ...props}) => <p className="mb-3 last:mb-0 leading-relaxed font-bold text-[15px]" {...props} />,
+                      ul: ({node, ...props}) => <ul className="space-y-2.5 mb-4 list-none pl-1" {...props} />,
                       li: ({node, ...props}) => (
-                        <li className="flex items-start gap-2">
+                        <li className="flex items-start gap-3">
                           <span className={cn(
-                            "font-black text-lg leading-none mt-0.5",
+                            "font-black text-xl leading-none mt-0.5 shrink-0",
                             msg.role === 'user' ? "text-blue-200" : "text-blue-600"
                           )}>•</span>
-                          <span className="font-semibold">{props.children}</span>
+                          <span className="font-bold text-[14px] leading-tight">{props.children}</span>
                         </li>
                       ),
-                      strong: ({node, ...props}) => <strong className="font-black" {...props} />,
+                      strong: ({node, ...props}) => <strong className="font-black text-[#0F172A]" {...props} />,
+                      em: ({node, ...props}) => <em className="italic font-bold text-slate-400 block mt-2 text-[10px] uppercase tracking-widest" {...props} />,
                     }}
                   >
                     {msg.content}
@@ -659,21 +663,21 @@ export default function Consultation() {
                 </div>
                 
                 <div className={cn(
-                  "flex items-center gap-2 mt-3 pt-2 border-t",
+                  "flex items-center gap-2 mt-4 pt-3 border-t",
                   msg.role === 'user' ? "border-blue-500/30" : "border-slate-50"
                 )}>
                   <span className={cn(
-                    "text-[8px] font-black uppercase tracking-widest",
-                    msg.role === 'user' ? "text-blue-200" : "text-slate-300"
+                    "text-[8px] font-black uppercase tracking-widest opacity-60",
+                    msg.role === 'user' ? "text-blue-100" : "text-slate-400"
                   )}>
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                   </span>
                   {msg.role === 'assistant' && (
                     <div className="flex items-center gap-1.5 ml-auto">
-                      <div className={cn("w-4 h-4 rounded-full flex items-center justify-center text-[8px]", selectedExpert.bgColor)}>
-                        {selectedExpert.icon}
+                      <div className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] shadow-sm", selectedExpert.bgColor)}>
+                        <span className="text-[10px]">{selectedExpert.icon}</span>
                       </div>
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
                         {selectedExpert.name}
                       </span>
                     </div>
@@ -747,49 +751,49 @@ export default function Consultation() {
   return (
       <div className="min-h-screen bg-[#F8FAFC] pb-24">
         {/* Header */}
-        <div className="pt-12 px-6 mb-8 flex items-center gap-4">
+        <div className="pt-12 px-5 mb-10 flex items-center gap-5">
           <button 
             onClick={() => navigate(-1)}
-            className="w-12 h-12 bg-white rounded-3xl flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all"
+            className="w-14 h-14 bg-white rounded-[1.25rem] flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all"
           >
-            <ChevronLeft size={24} strokeWidth={2.5} />
+            <ChevronLeft size={28} strokeWidth={2.5} />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight uppercase">AI EKSPERTLAR</h1>
-            <p className="text-[#2563EB] font-bold text-[10px] mt-1 uppercase tracking-widest">IXTISOSLASHGAN YORDAMCHINI TANLANG</p>
+            <h1 className="text-4xl font-black text-[#0F172A] tracking-tight uppercase leading-none">AI EKSPERTLAR</h1>
+            <p className="text-[#2563EB] font-bold text-xs mt-2 uppercase tracking-[0.15em]">IXTISOSLASHGAN YORDAMCHINI TANLANG</p>
           </div>
         </div>
 
-        <div className="px-4 space-y-4">
+        <div className="px-3 space-y-5">
           {EXPERTS.map((expert) => (
             <motion.button
               key={expert.id}
               whileTap={{ scale: 0.98 }}
               onClick={() => handleSelectExpert(expert)}
-              className="w-full bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 text-left group relative overflow-hidden transition-all hover:border-blue-100 hover:shadow-lg hover:shadow-blue-50/20"
+              className="w-full bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-5 text-left group relative overflow-hidden transition-all hover:border-blue-100 hover:shadow-lg hover:shadow-blue-50/20"
             >
               <div className={cn(
-                "w-20 h-20 rounded-[1.5rem] flex items-center justify-center shadow-sm shrink-0 transition-transform group-hover:scale-105",
+                "w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-sm shrink-0 transition-transform group-hover:scale-105",
                 expert.bgColor
               )}>
                 <img 
                   src={`https://emojicdn.elk.sh/${expert.icon}?style=apple`} 
                   alt={expert.name}
-                  className="w-12 h-12 object-contain"
+                  className="w-14 h-14 object-contain"
                   referrerPolicy="no-referrer"
                 />
               </div>
               
               <div className="flex-1 min-w-0 pr-2">
-                <h3 className="text-xl font-bold text-[#0F172A] tracking-tight leading-none mb-1">{expert.name}</h3>
-                <p className="text-[10px] font-bold text-[#2563EB] uppercase tracking-widest leading-none mb-2">{expert.title}</p>
-                <p className="text-[13px] text-slate-500 font-medium leading-snug line-clamp-2">
+                <h3 className="text-2xl font-black text-[#0F172A] tracking-tight leading-none mb-1.5">{expert.name}</h3>
+                <p className="text-xs font-bold text-[#2563EB] uppercase tracking-widest leading-none mb-3">{expert.title}</p>
+                <p className="text-sm text-slate-500 font-semibold leading-relaxed line-clamp-2">
                   {expert.description}
                 </p>
               </div>
               
               <div className="text-slate-200 group-hover:text-blue-500 transition-all shrink-0 pr-1">
-                <ChevronRight size={24} />
+                <ChevronRight size={28} />
               </div>
             </motion.button>
           ))}

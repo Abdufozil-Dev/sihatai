@@ -551,40 +551,40 @@ export default function Home() {
       </CustomModal>
 
       {/* Header */}
-      <div className="flex items-center justify-between px-1">
+      <div className="flex items-center justify-between px-1 mb-2">
         <div className="pt-4">
-          <p className="text-[#2563EB] font-semibold text-[10px] uppercase tracking-[0.22em] leading-none">
+          <p className="text-[#2563EB] font-black text-[11px] uppercase tracking-[0.25em] leading-none mb-3">
             {greeting}
           </p>
-          <h1 className="text-[34px] font-semibold text-[#0F172A] tracking-tight leading-[1.08] mt-2">
+          <h1 className="text-5xl font-black text-[#0F172A] tracking-tighter leading-none">
             {firstName}
           </h1>
         </div>
         <button 
           onClick={handleBellClick}
-          className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all relative"
+          className="w-16 h-16 bg-white rounded-[1.5rem] flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 active:scale-95 transition-all relative mt-4"
         >
-          <Bell size={24} strokeWidth={2.5} />
+          <Bell size={28} strokeWidth={2.5} />
           {hasNewNotification && (
-            <span className="absolute top-4 right-4 w-3 h-3 bg-rose-500 border-2 border-white rounded-full animate-pulse" />
+            <span className="absolute top-5 right-5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-full animate-pulse" />
           )}
         </button>
       </div>
 
       {/* Daily Stats Grid */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4 pt-4">
         {stats.map((stat, idx) => (
           <button
             key={idx}
             onClick={stat.onClick}
-            className="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center text-center gap-3 cursor-pointer active:scale-95 transition-all outline-none group hover:border-blue-100"
+            className="bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center text-center gap-4 cursor-pointer active:scale-95 transition-all outline-none group hover:border-blue-100"
           >
-            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110", stat.bgColor, stat.color)}>
-              <stat.icon size={20} />
+            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm", stat.bgColor, stat.color)}>
+              <stat.icon size={24} />
             </div>
-            <div>
-              <p className="text-[18px] font-bold text-slate-900 leading-none">{stat.value}</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{stat.label}</p>
+            <div className="space-y-1">
+              <p className="text-[20px] font-black text-slate-900 leading-none">{stat.value}</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
             </div>
           </button>
         ))}
@@ -594,25 +594,25 @@ export default function Home() {
       <motion.div 
         whileTap={{ scale: 0.98 }}
         onClick={() => handleNavigate('/consult')}
-        className="bg-[#2563EB] rounded-[2rem] p-6 text-white shadow-xl shadow-blue-200/40 relative overflow-hidden group cursor-pointer"
+        className="bg-[#2563EB] rounded-[2.5rem] p-8 text-white shadow-2xl shadow-blue-200/50 relative overflow-hidden group cursor-pointer mt-4"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl" />
-        <div className="relative z-10 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center">
-              <Sparkles className="text-white" size={22} />
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-white/20 transition-all duration-500" />
+        <div className="relative z-10 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-inner">
+              <Sparkles className="text-white" size={28} />
             </div>
             <div>
-              <h3 className="text-[22px] font-bold tracking-tight uppercase">AI DIAGNOSTIKA</h3>
-              <p className="text-blue-100 text-[10px] font-bold uppercase tracking-widest">Sog'lig'ingizni tekshiring</p>
+              <h3 className="text-3xl font-black tracking-tighter uppercase leading-none">AI DIAGNOSTIKA</h3>
+              <p className="text-blue-100/80 text-[10px] font-black uppercase tracking-[0.2em] mt-1.5">Sog'lig'ingizni tekshiring</p>
             </div>
           </div>
-          <p className="text-blue-50 text-[13px] font-medium leading-relaxed opacity-90">
-            Simptomlaringizni yozing va sun'iy intellekt yordamida tezkor tavsiyalarni oling
+          <p className="text-blue-50 text-base font-bold leading-tight opacity-90 max-w-[260px]">
+            Simptomlaringizni yozing va AI yordamida tezkor tavsiyalarni oling
           </p>
-          <div className="pt-0.5">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white text-[#2563EB] rounded-lg text-[9px] font-bold uppercase tracking-wider shadow-lg">
-              Boshlash <ChevronRight size={12} />
+          <div className="pt-2">
+            <span className="inline-flex items-center gap-2.5 px-6 py-3 bg-white text-[#2563EB] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl group-hover:gap-4 transition-all">
+              Boshlash <ChevronRight size={14} strokeWidth={3} />
             </span>
           </div>
         </div>
