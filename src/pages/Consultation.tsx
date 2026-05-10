@@ -443,7 +443,34 @@ export default function Consultation() {
         content: currentInput
       });
 
-      const fullPrompt = `${settings?.aiSystemPrompt || ''}\n\n${selectedExpert.systemPrompt}`;
+      // Foydalanuvchi ma'lumotlarini promptga qo'shish
+      const userContext = `
+Foydalanuvchi haqida ma'lumotlar:
+- Ismi: ${user.displayName || 'Noma\'lum'}
+- Yoshi: ${user.age || 'Kiritilmagan'}
+- Bo'yi: ${user.height || 'Kiritilmagan'} cm
+- Vazni: ${user.weight || 'Kiritilmagan'} kg
+- Qon guruhi: ${user.bloodGroup || 'Kiritilmagan'}
+- Qon bosimi: ${user.bloodPressure || 'Kiritilmagan'}
+- Puls: ${user.pulse || 'Kiritilmagan'}
+- Surunkali kasalliklar: ${user.chronicDiseases?.join(', ') || 'Yo\'q'}
+- Allergiyalar: ${user.allergies?.join(', ') || 'Yo\'q'}
+
+Mavjud klinikalar va shifokorlar ro'yxati:
+${clinics.map(c => `
+Klinika: ${c.name} (Manzil: ${c.address})
+Shifokorlar: ${c.doctors?.map(d => `${d.name} (${d.specialty}, Tajribasi: ${d.experience}, Qabul vaqtlari: ${d.availability?.join(', ')})`).join('; ') || 'Shifokorlar yo\'q'}
+`).join('\n')}
+
+MUHIM KO'RSATMA: 
+1. Yuqoridagi ma'lumotlarni hisobga olgan holda javob bering.
+2. Agar foydalanuvchi shikoyat qilsa (masalan, bosh og'rig'i), unga mos keladigan mutaxassisni (shifokorni) tavsiya qiling.
+3. Tavsiya qilganda aniq shifokor ismini va uning qabul vaqtlarini ayting.
+4. Foydalanuvchidan qaysi vaqt unga qulayligini so'rang.
+5. Javobingiz oxirida har doim "Sizga aniq tashxis qo'yish uchun shifokor qabuliga borishingizni tavsiya qilaman" deb qo'shib qo'ying.
+`;
+
+      const fullPrompt = `${settings?.aiSystemPrompt || ''}\n\n${selectedExpert.systemPrompt}\n\n${userContext}`;
       
       const ai = new GoogleGenAI({ apiKey: (process.env as any).GEMINI_API_KEY });
       const response = await ai.models.generateContent({
@@ -460,6 +487,39 @@ export default function Consultation() {
         role: 'assistant',
         content: aiResponseText
       });
+      
+      // Detect if user is confirming a time
+      const timeMatch = currentInput.match(/(\d{2}:\d{2})/);
+      if (timeMatch && messages.some(m => m.role === 'assistant' && (m.content.toLowerCase().includes('bron') || m.content.toLowerCase().includes('vaqt')))) {
+        const time = timeMatch[1];
+        
+        // Find if AI recommended a doctor
+        const lastAiMsg = messages.filter(m => m.role === 'assistant').pop();
+        let doctorName = "Shifokor";
+        if (lastAiMsg) {
+          const docMatch = lastAiMsg.content.match(/Dr\.\s[A-Za-z\s']+/);
+          if (docMatch) doctorName = docMatch[0];
+        }
+
+        const reminder: Reminder = {
+          id: Date.now().toString(),
+          userId: user.uid,
+          medicineName: `${doctorName} qabuli`,
+          dosage: 'Konsultatsiya',
+          time: time,
+          days: [new Date().toLocaleDateString('uz-UZ', { weekday: 'long' })],
+          isActive: true,
+          createdAt: Date.now()
+        };
+        
+        // Save to DB via medicalService/reminderService if needed
+        const savedReminders = JSON.parse(localStorage.getItem('reminders') || '[]');
+        localStorage.setItem('reminders', JSON.stringify([...savedReminders, reminder]));
+        
+        if (tg?.showConfirm) {
+          tg.showConfirm(`Sizning qabulingiz ${doctorName} bilan ${time} ga muvaffaqiyatli belgilandi.`);
+        }
+      }
 
       const assistantMessage: Message = {
         role: 'assistant',

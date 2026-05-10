@@ -92,6 +92,7 @@ function mapDoctorRow(row: any) {
   if (!row) return null;
   return {
     id: row.id,
+    userId: row.user_id,
     clinicId: row.clinic_id,
     name: row.name,
     specialty: row.specialty,
@@ -213,6 +214,27 @@ async function startServer() {
       const supabase = getSupabaseAdmin();
 
       try {
+        // Avval shifokor ekanligini tekshiramiz
+        const { data: doctorData } = await supabase
+          .from('doctors')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (doctorData) {
+          const doctorWelcome = `👨‍⚕️ *Assalomu alaykum, ${doctorData.name}!*\n\nSihat AI tizimidagi ish vaqtlaringizni boshqarish bo'limiga xush kelibsiz.\n\nBemorlar mini ilovada aynan siz belgilagan vaqtlarda qabulga yozila oladilar.`;
+          await botInstance!.sendMessage(msg.chat.id, doctorWelcome, {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🕒 Ish vaqtini sozlash', callback_data: `manage_slots_${doctorData.id}` }],
+                [{ text: '🩺 Mini ilovani ochish', web_app: { url: process.env.APP_URL || 'https://your-public-url.com' } }]
+              ]
+            }
+          });
+          return;
+        }
+
         const { data: existingUser } = await supabase
           .from('users')
           .select('id')
@@ -251,6 +273,98 @@ async function startServer() {
   });
 
   botInstance.on('callback_query', async (query) => {
+    const userId = String(query.from.id);
+    const supabase = getSupabaseAdmin();
+
+    if (query.data?.startsWith('manage_slots_') || query.data?.startsWith('toggle_slot_')) {
+      const isToggle = query.data.startsWith('toggle_slot_');
+      let doctorId = '';
+      let slotToToggle = '';
+
+      if (isToggle) {
+        // toggle_slot_DOCTORID_HH:MM
+        const parts = query.data.split('_');
+        doctorId = parts[2];
+        slotToToggle = parts[3];
+      } else {
+        // manage_slots_DOCTORID
+        doctorId = query.data.split('_')[2];
+      }
+
+      try {
+        const { data: doctor } = await supabase.from('doctors').select('*').eq('id', doctorId).single();
+        if (!doctor) return;
+
+        let currentSlots = doctor.availability || [];
+        if (isToggle) {
+          if (currentSlots.includes(slotToToggle)) {
+            currentSlots = currentSlots.filter((s: string) => s !== slotToToggle);
+          } else {
+            currentSlots = [...currentSlots, slotToToggle].sort();
+          }
+          await supabase.from('doctors').update({ availability: currentSlots }).eq('id', doctorId);
+        }
+
+        const keyboard = [];
+        for (let h = 0; h < 24; h++) {
+          const row = [];
+          for (let i = 0; i < 4; i++) {
+            const hour = String(h).padStart(2, '0') + ':00';
+            const isSelected = currentSlots.includes(hour);
+            row.push({
+              text: `${isSelected ? '✅ ' : ''}${hour}`,
+              callback_data: `toggle_slot_${doctorId}_${hour}`
+            });
+            if (i < 3) h++; // Next hour in same row
+          }
+          keyboard.push(row);
+        }
+
+        keyboard.push([{ text: '✅ Tayyor', callback_data: `finish_slots_${doctorId}` }]);
+
+        await botInstance!.editMessageText(`🕒 *Ish vaqtlaringizni tanlang:*\n\nBemorlar mini ilovada faqat ✅ belgisi bor vaqtlarni ko'ra oladilar.`, {
+          chat_id: query.message?.chat.id,
+          message_id: query.message?.message_id,
+          parse_mode: 'Markdown',
+          reply_markup: { inline_keyboard: keyboard }
+        });
+      } catch (err) {
+        console.error("Manage slots error:", err);
+      }
+      return;
+    }
+
+    if (query.data?.startsWith('finish_slots_')) {
+      await botInstance!.answerCallbackQuery(query.id, { text: "Ish vaqtlari muvaffaqiyatli saqlandi!" });
+      await botInstance!.editMessageText("✅ *Ish vaqtlaringiz saqlandi!*\n\nEndi bemorlar ushbu vaqtlarda qabulga yozilishlari mumkin.", {
+        chat_id: query.message?.chat.id,
+        message_id: query.message?.message_id,
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [[{ text: '🏠 Bosh menyu', callback_data: 'doctor_main_menu' }]]
+        }
+      });
+      return;
+    }
+
+    if (query.data === 'doctor_main_menu') {
+      const { data: doctor } = await supabase.from('doctors').select('*').eq('user_id', userId).maybeSingle();
+      if (doctor) {
+        await botInstance!.editMessageText(`👨‍⚕️ *Assalomu alaykum, ${doctor.name}!*\n\nIsh vaqtlaringizni boshqarish bo'limi.`, {
+          chat_id: query.message?.chat.id,
+          message_id: query.message?.message_id,
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🕒 Ish vaqtini sozlash', callback_data: `manage_slots_${doctor.id}` }],
+              [{ text: '🩺 Mini ilovani ochish', web_app: { url: process.env.APP_URL || 'https://your-public-url.com' } }]
+            ]
+          }
+        });
+      }
+      return;
+    }
+
     if (query.data === 'get_name_from_tg' && query.message) {
       const fullName = `${query.from.first_name || ''} ${query.from.last_name || ''}`.trim() || 'Foydalanuvchi';
       await botInstance!.answerCallbackQuery(query.id, { text: `Ism qabul qilindi: ${fullName}` });
@@ -420,6 +534,25 @@ async function startServer() {
     }
   });
 
+  app.post('/api/clinics', async (req, res) => {
+    try {
+      const { data, error } = await getSupabaseAdmin().from('clinics').insert({
+        name: req.body.name,
+        address: req.body.address,
+        phone: req.body.phone,
+        services: req.body.services,
+        photo_url: req.body.photoUrl,
+        description: req.body.description,
+        working_hours: req.body.workingHours,
+        location_url: req.body.locationUrl
+      }).select('*').maybeSingle();
+      if (error) throw error;
+      res.json(mapClinicRow(data));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Doctors
   app.get('/api/doctors', async (req, res) => {
     try {
@@ -429,6 +562,26 @@ async function startServer() {
       const { data, error } = await query.order('name');
       if (error) throw error;
       res.json((data || []).map(mapDoctorRow));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/doctors', async (req, res) => {
+    try {
+      const { data, error } = await getSupabaseAdmin().from('doctors').insert({
+        clinic_id: req.body.clinicId,
+        name: req.body.name,
+        specialty: req.body.specialty,
+        phone: req.body.phone,
+        photo_url: req.body.photoUrl,
+        experience: req.body.experience,
+        education: req.body.education,
+        bio: req.body.bio,
+        availability: req.body.availability
+      }).select('*').maybeSingle();
+      if (error) throw error;
+      res.json(mapDoctorRow(data));
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }

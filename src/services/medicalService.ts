@@ -20,9 +20,25 @@ export const medicalService = {
     return await api<Clinic[]>('/api/clinics');
   },
 
+  async addClinic(clinic: Partial<Clinic>): Promise<Clinic> {
+    return await api<Clinic>('/api/clinics', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(clinic),
+    });
+  },
+
   async getDoctors(clinicId?: string): Promise<Doctor[]> {
     const url = clinicId ? `/api/doctors?clinicId=${encodeURIComponent(clinicId)}` : '/api/doctors';
     return await api<Doctor[]>(url);
+  },
+
+  async addDoctor(doctor: Partial<Doctor>): Promise<Doctor> {
+    return await api<Doctor>('/api/doctors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(doctor),
+    });
   },
 
   async createPaymentRequest(data: Partial<PaymentRequest>): Promise<PaymentRequest> {

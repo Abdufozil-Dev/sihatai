@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  User as UserIcon, Activity, Heart, Calendar, Ruler, Weight, ShieldCheck
+  User as UserIcon, Activity, Heart, Calendar, Ruler, Weight, ShieldCheck, Dna
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import CustomModal from '../components/CustomModal';
@@ -253,7 +253,7 @@ export default function Profile() {
             onClick={() => openEditModal('pulse' as any, 'PULS')}
           />
           <IndicatorCard 
-            icon={ShieldCheck} 
+            icon={Dna} 
             label="QON GURUHI" 
             value={profile.bloodGroup || 'Kiritilmagan'} 
             colorClass="bg-violet-50 text-violet-500" 

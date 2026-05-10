@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, Clinic, Settings, Doctor } from '../types';
-import { Users, MapPin, Settings as SettingsIcon, BarChart3, Shield, Ban, Save, ChevronLeft, Plus, Trash2, Phone, Stethoscope, Megaphone, Send } from 'lucide-react';
+import { Users, MapPin, Settings as SettingsIcon, BarChart3, Shield, Ban, Save, ChevronLeft, Plus, Trash2, Phone, Stethoscope, Megaphone, Send, Clock, UserCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { clearAllAppLocalStorage } from '../lib/clearAppStorage';
+import { medicalService } from '../services/medicalService';
 
 const tg = window.Telegram?.WebApp;
 
@@ -14,8 +15,23 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<'stats' | 'users' | 'clinics' | 'settings'>('stats');
   const [users, setUsers] = useState<User[]>([]);
   const [clinics, setClinics] = useState<Clinic[]>([]);
-  const [newClinic, setNewClinic] = useState({ name: '', address: '', phone: '', services: '' });
-  const [newDoctor, setNewDoctor] = useState({ name: '', specialty: '', phone: '', clinicId: '' });
+  const [newClinic, setNewClinic] = useState({ 
+    name: '', 
+    address: '', 
+    phone: '', 
+    services: '', 
+    workingHours: '09:00 - 18:00',
+    description: ''
+  });
+  const [newDoctor, setNewDoctor] = useState({ 
+    name: '', 
+    specialty: '', 
+    phone: '', 
+    clinicId: '', 
+    experience: '', 
+    availability: '09:00, 10:00, 11:00, 14:00, 15:00, 16:00',
+    userId: '' // Telegram ID
+  });
   const [settings, setSettings] = useState<Settings>({
     aiSystemPrompt: "Siz malakali tibbiy yordamchisiz. Foydalanuvchi simptomlarini tahlil qiling va ehtimoliy sabablarni ayting. MUHIM: Har doim shifokorga murojaat qilishni tavsiya eting.",
     basicLimit: 5,
@@ -28,29 +44,27 @@ export default function Admin() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch Users from server (Supabase). Fallback: localStorage cache.
+        // Fetch Users
         let usersData: User[] = [];
         try {
           const r = await fetch('/api/users');
           if (r.ok) usersData = await r.json();
         } catch {}
-        if (!usersData.length) {
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key?.startsWith('user_profile_')) {
-              usersData.push(JSON.parse(localStorage.getItem(key)!));
-            }
-          }
-        }
         
-        // Fetch Clinics
-        const clinicsData = JSON.parse(localStorage.getItem('clinics') || '[]');
+        // Fetch Clinics from Supabase
+        const clinicsData = await medicalService.getClinics();
+        
+        // Fetch Doctors for each clinic
+        const clinicsWithDoctors = await Promise.all(clinicsData.map(async (c) => {
+          const docs = await medicalService.getDoctors(c.id);
+          return { ...c, doctors: docs };
+        }));
         
         // Fetch Settings
         const settingsData = JSON.parse(localStorage.getItem('admin_settings') || JSON.stringify(settings));
 
         setUsers(usersData);
-        setClinics(clinicsData);
+        setClinics(clinicsWithDoctors);
         setSettings(settingsData);
       } catch (error) {
         console.error("Error fetching admin data:", error);
@@ -62,22 +76,59 @@ export default function Admin() {
     fetchData();
   }, []);
 
-  const addClinic = () => {
+  const handleAddClinic = async () => {
     if (!newClinic.name || !newClinic.address) return;
-    const clinic: Clinic = {
-      id: Date.now().toString(),
-      name: newClinic.name,
-      address: newClinic.address,
-      phone: newClinic.phone,
-      services: newClinic.services.split(',').map(s => s.trim()),
-      createdAt: Date.now()
-    };
-    
-    const updatedClinics = [...clinics, clinic];
-    setClinics(updatedClinics);
-    localStorage.setItem('clinics', JSON.stringify(updatedClinics));
-    setNewClinic({ name: '', address: '', phone: '', services: '' });
-    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    try {
+      const clinicData: Partial<Clinic> = {
+        name: newClinic.name,
+        address: newClinic.address,
+        phone: newClinic.phone,
+        services: newClinic.services.split(',').map(s => s.trim()),
+        workingHours: newClinic.workingHours,
+        description: newClinic.description,
+        createdAt: Date.now()
+      };
+      
+      const savedClinic = await medicalService.addClinic(clinicData);
+      setClinics([...clinics, { ...savedClinic, doctors: [] }]);
+      setNewClinic({ name: '', address: '', phone: '', services: '', workingHours: '09:00 - 18:00', description: '' });
+      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } catch (err) {
+      console.error("Add clinic failed:", err);
+      tg?.showAlert("Klinika qo'shishda xatolik yuz berdi.");
+    }
+  };
+
+  const handleAddDoctor = async () => {
+    if (!newDoctor.name || !newDoctor.clinicId || !newDoctor.specialty) return;
+    try {
+      const doctorData: Partial<Doctor> = {
+        clinicId: newDoctor.clinicId,
+        userId: newDoctor.userId,
+        name: newDoctor.name,
+        specialty: newDoctor.specialty,
+        phone: newDoctor.phone,
+        experience: newDoctor.experience,
+        availability: newDoctor.availability.split(',').map(s => s.trim()),
+        createdAt: Date.now()
+      };
+      
+      const savedDoctor = await medicalService.addDoctor(doctorData);
+      
+      // Update local state
+      setClinics(clinics.map(c => {
+        if (c.id === newDoctor.clinicId) {
+          return { ...c, doctors: [...(c.doctors || []), savedDoctor] };
+        }
+        return c;
+      }));
+      
+      setNewDoctor({ name: '', specialty: '', phone: '', clinicId: '', experience: '', availability: '09:00, 10:00, 11:00, 14:00, 15:00, 16:00', userId: '' });
+      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } catch (err) {
+      console.error("Add doctor failed:", err);
+      tg?.showAlert("Shifokor qo'shishda xatolik yuz berdi.");
+    }
   };
 
   const deleteClinic = (id: string) => {
@@ -328,36 +379,49 @@ export default function Admin() {
             className="space-y-8"
           >
             {/* Add Clinic Form */}
-            <div className="bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-5">
-              <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight">Yangi klinika qo'shish</h3>
+            <div className="bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                  <MapPin size={20} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight">Klinika qo'shish</h3>
+              </div>
               <div className="grid grid-cols-1 gap-4">
                 <input
                   placeholder="Klinika nomi"
                   value={newClinic.name}
                   onChange={(e) => setNewClinic({ ...newClinic, name: e.target.value })}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
                 />
                 <input
                   placeholder="Manzil"
                   value={newClinic.address}
                   onChange={(e) => setNewClinic({ ...newClinic, address: e.target.value })}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
                 />
-                <input
-                  placeholder="Telefon"
-                  value={newClinic.phone}
-                  onChange={(e) => setNewClinic({ ...newClinic, phone: e.target.value })}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    placeholder="Telefon"
+                    value={newClinic.phone}
+                    onChange={(e) => setNewClinic({ ...newClinic, phone: e.target.value })}
+                    className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
+                  />
+                  <input
+                    placeholder="Ish vaqti (masalan: 09:00 - 18:00)"
+                    value={newClinic.workingHours}
+                    onChange={(e) => setNewClinic({ ...newClinic, workingHours: e.target.value })}
+                    className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
+                  />
+                </div>
                 <input
                   placeholder="Xizmatlar (vergul bilan ajrating)"
                   value={newClinic.services}
                   onChange={(e) => setNewClinic({ ...newClinic, services: e.target.value })}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium"
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
                 />
                 <button 
-                  onClick={addClinic}
-                  className="w-full h-12 bg-blue-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2"
+                  onClick={handleAddClinic}
+                  className="w-full h-12 bg-blue-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-100 active:scale-95 transition-all"
                 >
                   <Plus size={18} />
                   Klinikani saqlash
@@ -365,30 +429,127 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* Clinics List */}
+            {/* Add Doctor Form */}
+            <div className="bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+                  <Stethoscope size={20} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight">Shifokor qo'shish</h3>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                <select
+                  value={newDoctor.clinicId}
+                  onChange={(e) => setNewDoctor({ ...newDoctor, clinicId: e.target.value })}
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm text-slate-600"
+                >
+                  <option value="">Klinikani tanlang</option>
+                  {clinics.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <input
+                  placeholder="Shifokor ismi"
+                  value={newDoctor.name}
+                  onChange={(e) => setNewDoctor({ ...newDoctor, name: e.target.value })}
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    placeholder="Mutaxassisligi"
+                    value={newDoctor.specialty}
+                    onChange={(e) => setNewDoctor({ ...newDoctor, specialty: e.target.value })}
+                    className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
+                  />
+                  <input
+                    placeholder="Tajribasi (masalan: 10 yil)"
+                    value={newDoctor.experience}
+                    onChange={(e) => setNewDoctor({ ...newDoctor, experience: e.target.value })}
+                    className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
+                  />
+                </div>
+                <input
+                  placeholder="Telegram ID (shifokor botdan kirishi uchun)"
+                  value={newDoctor.userId}
+                  onChange={(e) => setNewDoctor({ ...newDoctor, userId: e.target.value })}
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
+                />
+                <input
+                  placeholder="Qabul vaqtlari (vergul bilan: 09:00, 10:00...)"
+                  value={newDoctor.availability}
+                  onChange={(e) => setNewDoctor({ ...newDoctor, availability: e.target.value })}
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
+                />
+                <button 
+                  onClick={handleAddDoctor}
+                  className="w-full h-12 bg-emerald-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 active:scale-95 transition-all"
+                >
+                  <Plus size={18} />
+                  Shifokorni saqlash
+                </button>
+              </div>
+            </div>
+
+            {/* Clinics & Doctors List */}
             <div className="space-y-4">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-2">Mavjud klinikalar</h3>
-              {clinics.map((clinic) => (
-                <div key={clinic.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
-                        <MapPin size={20} />
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-2">Mavjud ma'lumotlar</h3>
+              {clinics.length === 0 ? (
+                <div className="bg-white p-12 rounded-[2.5rem] border border-slate-100 text-center">
+                  <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest">Hozircha klinikalar yo'q</p>
+                </div>
+              ) : (
+                clinics.map((clinic) => (
+                  <div key={clinic.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-5">
+                    <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
+                          <MapPin size={24} />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-slate-900 text-base">{clinic.name}</h4>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{clinic.address}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-slate-900">{clinic.name}</h4>
-                        <p className="text-[10px] text-slate-400 font-medium">{clinic.address}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-blue-50 text-blue-600 text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-tighter">
+                          {clinic.doctors?.length || 0} DOCTOR
+                        </span>
+                        <button 
+                          onClick={() => {/* Implement delete */}}
+                          className="w-8 h-8 bg-rose-50 text-rose-500 rounded-lg flex items-center justify-center active:scale-90"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => deleteClinic(clinic.id)}
-                      className="text-rose-500 p-2 hover:bg-rose-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+
+                    {/* Doctors in this clinic */}
+                    <div className="space-y-3">
+                      {clinic.doctors?.map((doc) => (
+                        <div key={doc.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-white text-emerald-500 rounded-xl flex items-center justify-center shadow-sm">
+                              <UserCheck size={16} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-slate-900">{doc.name}</p>
+                              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{doc.specialty}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
+                              {doc.experience}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {(!clinic.doctors || clinic.doctors.length === 0) && (
+                        <p className="text-[9px] text-slate-300 font-bold text-center uppercase tracking-widest py-2">Shifokorlar yo'q</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </motion.div>
         )}

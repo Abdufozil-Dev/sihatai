@@ -36,6 +36,7 @@ export interface Consultation {
 
 export interface Doctor {
   id: string;
+  userId?: string;
   clinicId: string;
   name: string;
   specialty: string;

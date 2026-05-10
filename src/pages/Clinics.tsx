@@ -45,20 +45,34 @@ const MOCK_CLINICS: Clinic[] = [
   }
 ];
 
+import { medicalService } from '../services/medicalService';
+
 const tg = window.Telegram?.WebApp;
 
 export default function Clinics() {
   const navigate = useNavigate();
-  const [clinics, setClinics] = useState<Clinic[]>(MOCK_CLINICS);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    const savedClinics = localStorage.getItem('clinics');
-    if (savedClinics) {
-      setClinics(JSON.parse(savedClinics));
-    }
+    const fetchClinics = async () => {
+      setLoading(true);
+      try {
+        const data = await medicalService.getClinics();
+        const clinicsWithDoctors = await Promise.all(data.map(async (c) => {
+          const docs = await medicalService.getDoctors(c.id);
+          return { ...c, doctors: docs };
+        }));
+        setClinics(clinicsWithDoctors);
+      } catch (err) {
+        console.error("Fetch clinics failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchClinics();
   }, []);
 
   const handleBack = () => {
@@ -260,12 +274,21 @@ export default function Clinics() {
                         <img src={`https://picsum.photos/seed/${doctor.id}/100/100`} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </div>
                       <div className="space-y-0.5">
-                        <p className="font-bold text-slate-900 text-sm tracking-tight">{doctor.name}</p>
-                        <div className="flex items-center gap-2">
-                          <Stethoscope size={12} className="text-emerald-600" />
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{doctor.specialty}</span>
-                        </div>
+                      <p className="font-bold text-slate-900 text-sm tracking-tight">{doctor.name}</p>
+                      <div className="flex items-center gap-2">
+                        <Stethoscope size={12} className="text-emerald-600" />
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{doctor.specialty}</span>
                       </div>
+                      {doctor.availability && doctor.availability.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {doctor.availability.map((time, tIdx) => (
+                            <span key={tIdx} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[8px] font-black rounded-md border border-emerald-100/50">
+                              {time}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     </div>
                     <button className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex items-center justify-center active:scale-90 transition-all">
                       <ChevronRight size={20} />

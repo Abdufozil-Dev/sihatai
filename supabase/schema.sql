@@ -112,6 +112,7 @@ create table if not exists public.clinics (
 
 create table if not exists public.doctors (
   id uuid primary key default gen_random_uuid(),
+  user_id text references public.users(id) on delete set null, -- Telegram user link
   clinic_id uuid references public.clinics(id) on delete cascade,
   name text not null,
   specialty text not null,
