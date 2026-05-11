@@ -208,34 +208,69 @@ async function startServer() {
   botInstance.setWebHook('').catch(() => {});
   botInstance.startPolling({ interval: 1000, allowed_updates: ['message', 'callback_query'] });
 
+  const ADMIN_IDS = new Set(['6413273899', '7820708813']);
+  const adminState: Record<string, string> = {};
+
   botInstance.on('message', async (msg) => {
+    const userId = String(msg.from?.id);
+    const chatId = msg.chat.id;
+
+    if (msg.text?.trim() === '/admin') {
+      if (!ADMIN_IDS.has(userId)) return;
+
+      const adminMenu = {
+        inline_keyboard: [
+          [{ text: '📊 Statistika', callback_data: 'admin_stats' }],
+          [{ text: '👥 Foydalanuvchilar', callback_data: 'admin_users' }],
+          [{ text: '📢 Xabar yuborish', callback_data: 'admin_broadcast' }]
+        ]
+      };
+
+      await botInstance!.sendMessage(chatId, "🛠 *Admin Paneliga xush kelibsiz!*", {
+        parse_mode: 'Markdown',
+        reply_markup: adminMenu
+      });
+      return;
+    }
+
+    // Handle broadcast input
+    if (adminState[userId] === 'awaiting_broadcast') {
+      delete adminState[userId];
+      const broadcastMsg = msg.text;
+      if (!broadcastMsg) return;
+
+      const supabase = getSupabaseAdmin();
+      const { data: users } = await supabase.from('users').select('id');
+      
+      if (users) {
+        let successCount = 0;
+        await botInstance!.sendMessage(chatId, `📢 Xabar yuborish boshlandi (${users.length} ta foydalanuvchiga)...`);
+        
+        for (const u of users) {
+          try {
+            await botInstance!.sendMessage(u.id, broadcastMsg, { parse_mode: 'Markdown' });
+            successCount++;
+          } catch (err) {
+            // User might have blocked the bot
+          }
+        }
+        await botInstance!.sendMessage(chatId, `✅ Xabar yuborish yakunlandi!\n\nYetkazib berildi: ${successCount}\nXatolik: ${users.length - successCount}`);
+      }
+      return;
+    }
+
     if (msg.text?.trim() === '/start') {
       const userId = String(msg.from?.id);
       const supabase = getSupabaseAdmin();
 
       try {
-        // Avval shifokor ekanligini tekshiramiz
-        const { data: doctorData } = await supabase
-          .from('doctors')
-          .select('*')
-          .eq('user_id', userId)
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', userId)
           .maybeSingle();
 
-        if (doctorData) {
-          const doctorWelcome = `👨‍⚕️ *Assalomu alaykum, ${doctorData.name}!*\n\nSihat AI tizimidagi ish vaqtlaringizni boshqarish bo'limiga xush kelibsiz.\n\nBemorlar mini ilovada aynan siz belgilagan vaqtlarda qabulga yozila oladilar.`;
-          await botInstance!.sendMessage(msg.chat.id, doctorWelcome, {
-            parse_mode: 'Markdown',
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: '🕒 Ish vaqtini sozlash', callback_data: `manage_slots_${doctorData.id}` }],
-                [{ text: '🩺 Mini ilovani ochish', web_app: { url: process.env.APP_URL || 'https://your-public-url.com' } }]
-              ]
-            }
-          });
-          return;
-        }
-
-        const { data: existingUser } = await supabase
+        if (existingUser) {
           .from('users')
           .select('id')
           .eq('id', userId)
@@ -274,94 +309,38 @@ async function startServer() {
 
   botInstance.on('callback_query', async (query) => {
     const userId = String(query.from.id);
+    const chatId = query.message?.chat.id;
     const supabase = getSupabaseAdmin();
 
-    if (query.data?.startsWith('manage_slots_') || query.data?.startsWith('toggle_slot_')) {
-      const isToggle = query.data.startsWith('toggle_slot_');
-      let doctorId = '';
-      let slotToToggle = '';
+    if (query.data === 'admin_stats' && chatId) {
+      const { count: userCount } = await supabase.from('users').select('*', { count: 'exact', head: true });
+      const { count: reminderCount } = await supabase.from('reminders').select('*', { count: 'exact', head: true });
+      const { count: requestCount } = await supabase.from('payment_requests').select('*', { count: 'exact', head: true });
 
-      if (isToggle) {
-        // toggle_slot_DOCTORID_HH:MM
-        const parts = query.data.split('_');
-        doctorId = parts[2];
-        slotToToggle = parts[3];
-      } else {
-        // manage_slots_DOCTORID
-        doctorId = query.data.split('_')[2];
-      }
+      const stats = `📊 *Bot Statistikasi:*\n\n` +
+                    `👤 Foydalanuvchilar: ${userCount || 0}\n` +
+                    `⏰ Eslatmalar: ${reminderCount || 0}\n` +
+                    `💳 To'lov so'rovlari: ${requestCount || 0}`;
 
-      try {
-        const { data: doctor } = await supabase.from('doctors').select('*').eq('id', doctorId).single();
-        if (!doctor) return;
-
-        let currentSlots = doctor.availability || [];
-        if (isToggle) {
-          if (currentSlots.includes(slotToToggle)) {
-            currentSlots = currentSlots.filter((s: string) => s !== slotToToggle);
-          } else {
-            currentSlots = [...currentSlots, slotToToggle].sort();
-          }
-          await supabase.from('doctors').update({ availability: currentSlots }).eq('id', doctorId);
-        }
-
-        const keyboard = [];
-        for (let h = 0; h < 24; h++) {
-          const row = [];
-          for (let i = 0; i < 4; i++) {
-            const hour = String(h).padStart(2, '0') + ':00';
-            const isSelected = currentSlots.includes(hour);
-            row.push({
-              text: `${isSelected ? '✅ ' : ''}${hour}`,
-              callback_data: `toggle_slot_${doctorId}_${hour}`
-            });
-            if (i < 3) h++; // Next hour in same row
-          }
-          keyboard.push(row);
-        }
-
-        keyboard.push([{ text: '✅ Tayyor', callback_data: `finish_slots_${doctorId}` }]);
-
-        await botInstance!.editMessageText(`🕒 *Ish vaqtlaringizni tanlang:*\n\nBemorlar mini ilovada faqat ✅ belgisi bor vaqtlarni ko'ra oladilar.`, {
-          chat_id: query.message?.chat.id,
-          message_id: query.message?.message_id,
-          parse_mode: 'Markdown',
-          reply_markup: { inline_keyboard: keyboard }
-        });
-      } catch (err) {
-        console.error("Manage slots error:", err);
-      }
+      await botInstance!.sendMessage(chatId, stats, { parse_mode: 'Markdown' });
+      await botInstance!.answerCallbackQuery(query.id);
       return;
     }
 
-    if (query.data?.startsWith('finish_slots_')) {
-      await botInstance!.answerCallbackQuery(query.id, { text: "Ish vaqtlari muvaffaqiyatli saqlandi!" });
-      await botInstance!.editMessageText("✅ *Ish vaqtlaringiz saqlandi!*\n\nEndi bemorlar ushbu vaqtlarda qabulga yozilishlari mumkin.", {
-        chat_id: query.message?.chat.id,
-        message_id: query.message?.message_id,
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [[{ text: '🏠 Bosh menyu', callback_data: 'doctor_main_menu' }]]
-        }
-      });
+    if (query.data === 'admin_users' && chatId) {
+      const { data: users } = await supabase.from('users').select('display_name, username').limit(20);
+      if (users) {
+        const userList = users.map(u => `• ${u.display_name} (@${u.username || 'yo\'q'})`).join('\n');
+        await botInstance!.sendMessage(chatId, `👥 *Oxirgi 20 ta foydalanuvchi:*\n\n${userList}`, { parse_mode: 'Markdown' });
+      }
+      await botInstance!.answerCallbackQuery(query.id);
       return;
     }
 
-    if (query.data === 'doctor_main_menu') {
-      const { data: doctor } = await supabase.from('doctors').select('*').eq('user_id', userId).maybeSingle();
-      if (doctor) {
-        await botInstance!.editMessageText(`👨‍⚕️ *Assalomu alaykum, ${doctor.name}!*\n\nIsh vaqtlaringizni boshqarish bo'limi.`, {
-          chat_id: query.message?.chat.id,
-          message_id: query.message?.message_id,
-          parse_mode: 'Markdown',
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: '🕒 Ish vaqtini sozlash', callback_data: `manage_slots_${doctor.id}` }],
-              [{ text: '🩺 Mini ilovani ochish', web_app: { url: process.env.APP_URL || 'https://your-public-url.com' } }]
-            ]
-          }
-        });
-      }
+    if (query.data === 'admin_broadcast' && chatId) {
+      adminState[userId] = 'awaiting_broadcast';
+      await botInstance!.sendMessage(chatId, "📢 *Xabar matnini yuboring:*\n\n(Bu xabar barcha foydalanuvchilarga yuboriladi. Markdown ishlaydi.)", { parse_mode: 'Markdown' });
+      await botInstance!.answerCallbackQuery(query.id);
       return;
     }
 

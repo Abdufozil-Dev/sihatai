@@ -21,7 +21,8 @@ export default function Admin() {
     phone: '', 
     services: '', 
     workingHours: '09:00 - 18:00',
-    description: ''
+    description: '',
+    photoUrl: ''
   });
   const [newDoctor, setNewDoctor] = useState({ 
     name: '', 
@@ -30,7 +31,8 @@ export default function Admin() {
     clinicId: '', 
     experience: '', 
     availability: '09:00, 10:00, 11:00, 14:00, 15:00, 16:00',
-    userId: '' // Telegram ID
+    userId: '', // Telegram ID
+    photoUrl: ''
   });
   const [settings, setSettings] = useState<Settings>({
     aiSystemPrompt: "Siz malakali tibbiy yordamchisiz. Foydalanuvchi simptomlarini tahlil qiling va ehtimoliy sabablarni ayting. MUHIM: Har doim shifokorga murojaat qilishni tavsiya eting.",
@@ -86,12 +88,13 @@ export default function Admin() {
         services: newClinic.services.split(',').map(s => s.trim()),
         workingHours: newClinic.workingHours,
         description: newClinic.description,
+        photoUrl: newClinic.photoUrl,
         createdAt: Date.now()
       };
       
       const savedClinic = await medicalService.addClinic(clinicData);
       setClinics([...clinics, { ...savedClinic, doctors: [] }]);
-      setNewClinic({ name: '', address: '', phone: '', services: '', workingHours: '09:00 - 18:00', description: '' });
+      setNewClinic({ name: '', address: '', phone: '', services: '', workingHours: '09:00 - 18:00', description: '', photoUrl: '' });
       if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } catch (err) {
       console.error("Add clinic failed:", err);
@@ -109,6 +112,7 @@ export default function Admin() {
         specialty: newDoctor.specialty,
         phone: newDoctor.phone,
         experience: newDoctor.experience,
+        photoUrl: newDoctor.photoUrl,
         availability: newDoctor.availability.split(',').map(s => s.trim()),
         createdAt: Date.now()
       };
@@ -123,7 +127,7 @@ export default function Admin() {
         return c;
       }));
       
-      setNewDoctor({ name: '', specialty: '', phone: '', clinicId: '', experience: '', availability: '09:00, 10:00, 11:00, 14:00, 15:00, 16:00', userId: '' });
+      setNewDoctor({ name: '', specialty: '', phone: '', clinicId: '', experience: '', availability: '09:00, 10:00, 11:00, 14:00, 15:00, 16:00', userId: '', photoUrl: '' });
       if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } catch (err) {
       console.error("Add doctor failed:", err);
@@ -419,6 +423,12 @@ export default function Admin() {
                   onChange={(e) => setNewClinic({ ...newClinic, services: e.target.value })}
                   className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
                 />
+                <input
+                  placeholder="Klinika rasmi URL (ixtiyoriy)"
+                  value={newClinic.photoUrl}
+                  onChange={(e) => setNewClinic({ ...newClinic, photoUrl: e.target.value })}
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
+                />
                 <button 
                   onClick={handleAddClinic}
                   className="w-full h-12 bg-blue-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-100 active:scale-95 transition-all"
@@ -478,6 +488,12 @@ export default function Admin() {
                   placeholder="Qabul vaqtlari (vergul bilan: 09:00, 10:00...)"
                   value={newDoctor.availability}
                   onChange={(e) => setNewDoctor({ ...newDoctor, availability: e.target.value })}
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
+                />
+                <input
+                  placeholder="Shifokor rasmi URL (ixtiyoriy)"
+                  value={newDoctor.photoUrl}
+                  onChange={(e) => setNewDoctor({ ...newDoctor, photoUrl: e.target.value })}
                   className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-medium text-sm"
                 />
                 <button 

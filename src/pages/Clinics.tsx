@@ -195,13 +195,28 @@ export default function Clinics() {
                   <div className="flex items-center justify-between pt-5 border-t border-slate-50">
                     <div className="flex items-center gap-3">
                       <div className="flex -space-x-2.5">
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="w-9 h-9 rounded-xl border-2 border-white bg-slate-100 flex items-center justify-center overflow-hidden shadow-sm">
-                            <img src={`https://picsum.photos/seed/doctor${i}/100/100`} alt="Doctor" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                          </div>
-                        ))}
+                        {clinic.doctors && clinic.doctors.length > 0 ? (
+                          clinic.doctors.slice(0, 3).map((doc, i) => (
+                            <div key={i} className="w-9 h-9 rounded-xl border-2 border-white bg-slate-100 flex items-center justify-center overflow-hidden shadow-sm">
+                              <img 
+                                src={doc.photoUrl || `https://picsum.photos/seed/${doc.id}/100/100`} 
+                                alt="Doctor" 
+                                className="w-full h-full object-cover" 
+                                referrerPolicy="no-referrer" 
+                              />
+                            </div>
+                          ))
+                        ) : (
+                          [1, 2, 3].map((i) => (
+                            <div key={i} className="w-9 h-9 rounded-xl border-2 border-white bg-slate-100 flex items-center justify-center overflow-hidden shadow-sm">
+                              <img src={`https://picsum.photos/seed/doctor${i}/100/100`} alt="Doctor" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            </div>
+                          ))
+                        )}
                       </div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">{clinic.doctors.length} shifokor</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                        {(clinic.doctors || []).length} shifokor
+                      </span>
                     </div>
                     <button className="w-10 h-10 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200 flex items-center justify-center group-hover:scale-105 transition-all">
                       <ChevronRight size={20} />
@@ -228,8 +243,12 @@ export default function Clinics() {
           >
             {/* Clinic Hero */}
             <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm space-y-6">
-              <div className="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center shadow-xl shadow-blue-200 mx-auto">
-                <MapPin size={32} className="text-white" />
+              <div className="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center shadow-xl shadow-blue-200 mx-auto overflow-hidden">
+                {selectedClinic.photoUrl ? (
+                  <img src={selectedClinic.photoUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <MapPin size={32} className="text-white" />
+                )}
               </div>
               <div className="text-center space-y-2">
                 <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{selectedClinic.name}</h2>
@@ -271,7 +290,12 @@ export default function Clinics() {
                   <div key={doctor.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 flex items-center justify-between group hover:border-emerald-100 transition-all">
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
-                        <img src={`https://picsum.photos/seed/${doctor.id}/100/100`} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <img 
+                          src={doctor.photoUrl || `https://picsum.photos/seed/${doctor.id}/100/100`} 
+                          alt="" 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer" 
+                        />
                       </div>
                       <div className="space-y-0.5">
                       <p className="font-bold text-slate-900 text-sm tracking-tight">{doctor.name}</p>
