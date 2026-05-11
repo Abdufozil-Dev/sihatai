@@ -269,11 +269,15 @@ async function startServer() {
       const supabase = getSupabaseAdmin();
 
       try {
-        const { data: existingUser } = await supabase
+        const { data: existingUser, error: fetchError } = await supabase
           .from('users')
           .select('id')
           .eq('id', userId)
           .maybeSingle();
+
+        if (fetchError) {
+          console.error("Supabase fetch error:", fetchError);
+        }
 
         if (existingUser) {
           const welcomeBackMessage = `*Sihat AI ga qaytganingizdan xursandmiz!*\n\nIlovani ochib sog'lig'ingizni kuzatishda davom eting.`;
@@ -288,7 +292,8 @@ async function startServer() {
           return;
         }
       } catch (err) {
-        // User not found or DB error, continue to registration
+        console.error("Supabase check error:", err);
+        // Continue to registration even if DB check fails
       }
 
       const fullName = `${msg.from?.first_name || ''} ${msg.from?.last_name || ''}`.trim() || 'Foydalanuvchi';
@@ -374,13 +379,18 @@ async function startServer() {
       const supabase = getSupabaseAdmin();
       const userId = String(msg.from?.id);
       
-      await supabase.from('users').upsert({
+      const { error: upsertError } = await supabase.from('users').upsert({
         id: userId,
         display_name: fullName,
         phone: contact.phone_number,
         username: msg.from?.username || null,
         updated_at: new Date().toISOString()
       }, { onConflict: 'id' });
+
+      if (upsertError) {
+        console.error("Supabase upsert error:", upsertError);
+        throw upsertError;
+      }
 
       // Birinchi xabar: Tasdiqlash
       await botInstance!.sendMessage(chatId, `✅ *Rahmat, ${fullName}! Siz ro'yxatdan o'tdingiz!*`, {
