@@ -208,7 +208,12 @@ async function startServer() {
   botInstance.setWebHook('').catch(() => {});
   botInstance.startPolling();
 
-  const ADMIN_IDS = new Set(['6413273899', '7820708813']);
+  const adminIdsFromEnv = String(process.env.ADMIN_ID || '')
+    .split(',')
+    .map((s: string) => s.trim())
+    .filter(Boolean);
+  
+  const ADMIN_IDS = new Set(adminIdsFromEnv);
   const adminState: Record<string, string> = {};
 
   botInstance.on('message', async (msg) => {
