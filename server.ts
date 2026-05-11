@@ -206,7 +206,7 @@ async function startServer() {
 
   botInstance = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN!);
   botInstance.setWebHook('').catch(() => {});
-  botInstance.startPolling({ interval: 1000, allowed_updates: ['message', 'callback_query'] });
+  botInstance.startPolling();
 
   const ADMIN_IDS = new Set(['6413273899', '7820708813']);
   const adminState: Record<string, string> = {};
@@ -265,12 +265,6 @@ async function startServer() {
 
       try {
         const { data: existingUser } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', userId)
-          .maybeSingle();
-
-        if (existingUser) {
           .from('users')
           .select('id')
           .eq('id', userId)
